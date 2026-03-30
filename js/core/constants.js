@@ -63,8 +63,8 @@ export const BONUS_LABELS = {
   0: '',
   1: 'MOT<br>TRIPLE',
   2: 'MOT<br>DOUBLE',
-  3: 'LET.<br>TRIPLE',
-  4: 'LET.<br>DOUBLE',
+  3: 'LETTRE<br>TRIPLE',
+  4: 'LETTRE<br>DOUBLE',
   5: '★',
 };
 

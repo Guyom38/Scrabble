@@ -44,12 +44,13 @@
   On contraint aussi par la largeur disponible (100vw - sidebar).
 */
 #screen-game {
-  --sidebar-w: 350px;
+  --sidebar-w:   350px;
+  --workspace-w: clamp(300px, 28vw, 440px);
   --cell-size: clamp(
     22px,
     min(
-      calc((100vh - 64px) / 15),
-      calc((100vw - var(--sidebar-w) - 40px) / 15)
+      calc((100vh - 96px) / 15),
+      calc((100vw - var(--sidebar-w) - var(--workspace-w) - 60px) / 15)
     ),
     76px
   );
@@ -458,6 +459,50 @@
 .score-entry--thinking .score-entry__thinking { display: block; }
 
 /* ============================================================
+   WORKSPACE — espace libre des tuiles
+   ============================================================ */
+
+.workspace {
+  width: var(--workspace-w);
+  min-width: var(--workspace-w);
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg,
+    rgba(0,0,0,0.20) 0%,
+    rgba(0,0,0,0.08) 50%,
+    rgba(0,0,0,0.20) 100%
+  );
+  border-right: 1px solid rgba(139,94,48,0.22);
+  flex-shrink: 0;
+}
+
+/* Label discret en haut */
+.workspace::before {
+  content: 'VOS TUILES';
+  position: absolute;
+  top: 14px;
+  left: 0; right: 0;
+  text-align: center;
+  font-size: 0.57rem;
+  font-weight: 900;
+  letter-spacing: 0.22em;
+  color: rgba(139,94,48,0.45);
+  text-transform: uppercase;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Séparateur bas (juste visuel) */
+.workspace::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 10%; right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(139,94,48,0.3), transparent);
+}
+
+/* ============================================================
    PLATEAU (zone droite, tout l'espace)
    ============================================================ */
 
@@ -582,6 +627,7 @@
   }
   #screen-game {
     --sidebar-w: 100%;
+    --workspace-w: 0px;
     --cell-size: clamp(20px, calc((100vw - 16px) / 15.5), 38px);
   }
   .game-layout { flex-direction: column; height: auto; }
@@ -597,14 +643,13 @@
   .sidebar__logo { font-size: 1.2rem; margin-right: auto; }
   .sidebar__stats { grid-template-columns: 1fr 1fr; min-width: 160px; }
   .scoreboard { min-width: 200px; flex: 1; }
-  .sidebar__rack-wrap { display: none; } /* rack en bas sur mobile */
-  .sidebar__actions { display: none; }   /* actions en bas sur mobile */
+  .sidebar__actions { display: none; }
   .sidebar__menu-btn { margin-top: 0; width: auto; }
+  .workspace { display: none; }
   .game-main {
     height: auto; padding: 6px 4px;
     flex-direction: column; gap: 8px;
   }
-  /* Rack visible sur mobile en bas */
   .game-main::after { display: none; }
   #screen-menu, #screen-config { padding: var(--gap-lg) var(--gap-md); }
 }

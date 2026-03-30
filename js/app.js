@@ -62,9 +62,14 @@ async function boot() {
   console.log('[boot] Transition vers le menu…');
 
   splash.hide(() => {
-    console.log('[boot] Splash caché, affichage du menu');
-    showScreen('screen-menu');
-    _refreshMenuButtons();
+    console.log('[boot] Splash caché');
+    if (SaveManager.hasSave()) {
+      console.log('[boot] Sauvegarde détectée, reprise automatique');
+      _resumeGame();
+    } else {
+      showScreen('screen-menu');
+      _refreshMenuButtons();
+    }
   });
 }
 
@@ -171,7 +176,7 @@ function _startGame(config) {
   engine   = new GameEngine();
   renderer = new Renderer(engine, {
     board:         document.getElementById('game-board'),
-    rackContainer: document.getElementById('player-rack'),
+    workspace:     document.getElementById('workspace'),
     scoreList:     document.getElementById('score-list'),
     bagCount:      document.getElementById('bag-count'),
     turnIndicator: document.getElementById('turn-text'),
@@ -203,7 +208,7 @@ function _resumeGame() {
   engine   = new GameEngine();
   renderer = new Renderer(engine, {
     board:         document.getElementById('game-board'),
-    rackContainer: document.getElementById('player-rack'),
+    workspace:     document.getElementById('workspace'),
     scoreList:     document.getElementById('score-list'),
     bagCount:      document.getElementById('bag-count'),
     turnIndicator: document.getElementById('turn-text'),

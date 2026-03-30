@@ -167,14 +167,6 @@
         </div>
       </div>
 
-      <!-- Chevalet -->
-      <section class="sidebar__section">
-        <div class="sidebar__section-title">🀄 Vos tuiles</div>
-        <div class="sidebar__rack-wrap">
-          <div class="rack" id="player-rack" role="group" aria-label="Vos tuiles"></div>
-        </div>
-      </section>
-
       <!-- Actions -->
       <section class="sidebar__section sidebar__actions">
         <button id="btn-validate" class="btn btn--success  rack-controls btn--action-main">✓ Valider le mot</button>
@@ -192,6 +184,11 @@
       <button id="btn-game-menu" class="btn btn--ghost sidebar__menu-btn">☰ Menu</button>
 
     </aside>
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!--  ESPACE LIBRE — tuiles en vrac                        -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <div class="workspace" id="workspace" aria-label="Espace de jeu libre"></div>
 
     <!-- ══════════════════════════════════════════════════════ -->
     <!--  PLATEAU (droite, occupe tout l'espace)               -->
@@ -340,6 +337,6 @@
 </div>
 
 <!-- Application -->
-<script type="module" src="js/app.js"></script>
+<script src="app.bundle.js"></script>
 </body>
 </html>

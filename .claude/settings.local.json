@@ -11,7 +11,10 @@
       "WebFetch(domain:www.colourlovers.com)",
       "WebFetch(domain:www.color-hex.com)",
       "WebFetch(domain:htmlcolorcodes.com)",
-      "WebFetch(domain:www.colorhexa.com)"
+      "WebFetch(domain:www.colorhexa.com)",
+      "Bash(npm --version)",
+      "Bash(npx esbuild:*)",
+      "Bash(node build.js)"
     ]
   }
 }

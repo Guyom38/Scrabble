@@ -1,16 +1,15 @@
 /* ============================================================
-   BOARD — Plateau de jeu 15×15 façon Nintendo
+   BOARD — Plateau de jeu 15×15
    ============================================================ */
 
-/* ---------- Cadre extérieur style cartouche Nintendo ---------- */
+/* ---------- Cadre extérieur ---------- */
 .board-frame {
   background: #1a0d00;
   padding: 14px;
+  margin: 16px 0;
   border-radius: 16px;
   position: relative;
   display: inline-block;
-
-  /* Cadre en relief multicouche */
   border: 3px solid #8B6030;
   box-shadow:
     0 0 0 1px #3a1a00,
@@ -22,32 +21,21 @@
     inset 0 -1px 0 rgba(0,0,0,0.4);
 }
 
-/* Bande lumineuse en haut du cadre */
 .board-frame::before {
   content: '';
   position: absolute;
-  top: 3px;
-  left: 12px;
-  right: 12px;
-  height: 3px;
-  border-radius: 2px;
+  top: 3px; left: 12px; right: 12px;
+  height: 3px; border-radius: 2px;
   background: linear-gradient(90deg,
-    transparent 0%,
-    rgba(255,200,80,0.25) 20%,
-    rgba(255,200,80,0.5) 50%,
-    rgba(255,200,80,0.25) 80%,
-    transparent 100%
+    transparent 0%, rgba(255,200,80,0.25) 20%,
+    rgba(255,200,80,0.5) 50%, rgba(255,200,80,0.25) 80%, transparent 100%
   );
-  pointer-events: none;
-  z-index: 10;
+  pointer-events: none; z-index: 10;
 }
 
-/* Vignette intérieure */
 .board-frame::after {
   content: '';
-  position: absolute;
-  inset: 10px;
-  border-radius: 10px;
+  position: absolute; inset: 10px; border-radius: 10px;
   pointer-events: none;
   box-shadow: inset 0 0 30px rgba(0,0,0,0.5);
   z-index: 10;
@@ -67,18 +55,11 @@
   box-shadow: inset 0 2px 12px rgba(0,0,0,0.45);
 }
 
-/* ---------- Cellule de base — vert Scrabble officiel ---------- */
+/* ---------- Cellule de base ---------- */
 .board__cell {
-  background: linear-gradient(
-    135deg,
-    #6a9648 0%,
-    #5a8040 45%,
-    #4e7035 100%
-  );
+  background: linear-gradient(135deg, #6a9648 0%, #5a8040 45%, #4e7035 100%);
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   overflow: hidden;
   cursor: default;
   transition: background var(--transition-fast), box-shadow var(--transition-fast);
@@ -89,123 +70,148 @@
     inset -1px 0 0 rgba(0,0,0,0.12);
 }
 
-/* Reflet discret en haut de la case */
+/* Reflet discret en haut */
 .board__cell::after {
   content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 45%;
+  position: absolute; top: 0; left: 0; right: 0; height: 45%;
   background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, transparent 100%);
-  pointer-events: none;
-  z-index: 1;
+  pointer-events: none; z-index: 1;
 }
 
-/* Hover — légère surbrillance verte */
+/* Hover */
 .board__cell:not(.board__cell--occupied):hover {
   background: linear-gradient(135deg, #78a850, #68943e, #5c8235);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.28),
-    inset 0 0 10px rgba(120,200,80,0.15);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.28), inset 0 0 10px rgba(120,200,80,0.15);
 }
 
-/* Cellule survolée pendant drag */
+/* Drag-over */
 .board__cell.drag-over {
-  background: linear-gradient(135deg,
-    rgba(212,160,23,0.5),
-    rgba(212,160,23,0.35)
-  ) !important;
+  background: linear-gradient(135deg, rgba(212,160,23,0.5), rgba(212,160,23,0.35)) !important;
   box-shadow: inset 0 0 0 2.5px var(--accent-gold), inset 0 0 12px rgba(212,160,23,0.3) !important;
 }
 
-/* ---------- Cases bonus — MOT TRIPLE ---------- */
+/* ================================================================
+   CELLULES BONUS
+   Design : carré de la taille de la cellule pivoté 45° (::before),
+   ses 4 coins pointent dans les cellules voisines au milieu de chaque côté.
+   overflow: visible + z-index: 1 pour que les pointes soient visibles
+   au-dessus des cellules normales mais sous leurs tuiles (z-index: 10).
+   ================================================================ */
+
+.board__cell--tw,
+.board__cell--dw,
+.board__cell--tl,
+.board__cell--dl,
+.board__cell--start {
+  overflow: visible;  /* laisser le losange déborder */
+  z-index: 1;         /* au-dessus des cellules normales (z:auto) */
+                      /* mais les tuiles voisines restent à z:10 > 1 */
+}
+
+/* ---- Le losange : carré pivoté 45°, même taille que la cellule ---- */
+/* Half-diagonale = cell-size * √2/2 ≈ 0.707 * cell-size             */
+/* Débordement dans la cellule voisine ≈ (0.707 - 0.5) * cell-size    */
+/* = ~0.2 * cell-size (ex: 8px pour une cellule de 40px)              */
+
+.board__cell--tw::before,
+.board__cell--dw::before,
+.board__cell--tl::before,
+.board__cell--dl::before,
+.board__cell--start::before {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  width:  var(--cell-size);
+  height: var(--cell-size);
+  transform: translate(-50%, -50%) rotate(45deg);
+  pointer-events: none;
+  z-index: 0;  /* sous le fond de la cellule (::after reflet, label, tuiles) */
+}
+
+/* --- Mot Triple (rouge) --- */
 .board__cell--tw {
   background: linear-gradient(135deg, #c0382a 0%, #a02820 50%, #882018 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255,120,100,0.5),
-    inset 0 -1px 0 rgba(0,0,0,0.3);
+  box-shadow: inset 0 1px 0 rgba(255,120,100,0.5), inset 0 -1px 0 rgba(0,0,0,0.3);
 }
-.board__cell--tw::after { background: linear-gradient(180deg, rgba(255,150,130,0.3) 0%, transparent 100%); }
+.board__cell--tw::before { background: #a02820; }
+.board__cell--tw::after  { background: linear-gradient(180deg, rgba(255,150,130,0.3) 0%, transparent 100%); }
 
-/* ---------- Cases bonus — MOT DOUBLE ---------- */
+/* --- Mot Double (rose) --- */
 .board__cell--dw {
   background: linear-gradient(135deg, #e08090 0%, #c06070 50%, #a85060 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255,180,190,0.5),
-    inset 0 -1px 0 rgba(0,0,0,0.2);
+  box-shadow: inset 0 1px 0 rgba(255,180,190,0.5), inset 0 -1px 0 rgba(0,0,0,0.2);
 }
-.board__cell--dw::after { background: linear-gradient(180deg, rgba(255,200,210,0.3) 0%, transparent 100%); }
+.board__cell--dw::before { background: #c06070; }
+.board__cell--dw::after  { background: linear-gradient(180deg, rgba(255,200,210,0.3) 0%, transparent 100%); }
 
-/* ---------- Cases bonus — LETTRE TRIPLE ---------- */
+/* --- Lettre Triple (bleu marine) --- */
 .board__cell--tl {
   background: linear-gradient(135deg, #1a5098 0%, #143880 50%, #0e2a60 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(100,160,255,0.4),
-    inset 0 -1px 0 rgba(0,0,0,0.3);
+  box-shadow: inset 0 1px 0 rgba(100,160,255,0.4), inset 0 -1px 0 rgba(0,0,0,0.3);
 }
-.board__cell--tl::after { background: linear-gradient(180deg, rgba(130,180,255,0.3) 0%, transparent 100%); }
+.board__cell--tl::before { background: #143880; }
+.board__cell--tl::after  { background: linear-gradient(180deg, rgba(130,180,255,0.3) 0%, transparent 100%); }
 
-/* ---------- Cases bonus — LETTRE DOUBLE ---------- */
+/* --- Lettre Double (bleu ciel) --- */
 .board__cell--dl {
   background: linear-gradient(135deg, #5aaad8 0%, #3888b8 50%, #2870a0 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(180,230,255,0.5),
-    inset 0 -1px 0 rgba(0,0,0,0.2);
+  box-shadow: inset 0 1px 0 rgba(180,230,255,0.5), inset 0 -1px 0 rgba(0,0,0,0.2);
 }
-.board__cell--dl::after { background: linear-gradient(180deg, rgba(200,240,255,0.35) 0%, transparent 100%); }
+.board__cell--dl::before { background: #3888b8; }
+.board__cell--dl::after  { background: linear-gradient(180deg, rgba(200,240,255,0.35) 0%, transparent 100%); }
 
-/* ---------- Case centrale ---------- */
+/* --- Case centrale (rose + étoile) --- */
 .board__cell--start {
   background: linear-gradient(135deg, #e08090 0%, #c06070 50%, #a85060 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255,180,190,0.5),
-    inset 0 -1px 0 rgba(0,0,0,0.2);
+  box-shadow: inset 0 1px 0 rgba(255,180,190,0.5), inset 0 -1px 0 rgba(0,0,0,0.2);
 }
+.board__cell--start::before { background: #c06070; }
+.board__cell--start::after  { background: linear-gradient(180deg, rgba(255,200,210,0.3) 0%, transparent 100%); }
 
-/* ---------- Labels des cases bonus ---------- */
+/* ================================================================
+   LABELS — centrés, sous les tuiles (z-index: 2 dans le contexte local)
+   ================================================================ */
+
 .board__cell-label {
-  font-size: clamp(4.5px, 1.4vw, 6.5px);
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: clamp(5px, calc(var(--cell-size) * 0.18), 9px);
   font-weight: 900;
   text-transform: uppercase;
   text-align: center;
   line-height: 1.2;
-  letter-spacing: 0.01em;
+  letter-spacing: 0em;
   pointer-events: none;
-  z-index: 2;
-  position: relative;
+  z-index: 2;        /* au-dessus du losange (z:0) et du reflet (::after) */
   white-space: nowrap;
 }
 
-.board__cell--tw .board__cell-label {
-  color: #fff;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.6), 0 0 8px rgba(255,100,80,0.4);
+.board__cell--tw .board__cell-label,
+.board__cell--start .board__cell-label {
+  color: rgba(255,255,255,0.95);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.7);
 }
 .board__cell--tl .board__cell-label {
-  color: #c8e0ff;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.7), 0 0 8px rgba(80,140,255,0.4);
+  color: rgba(200,228,255,0.95);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
 }
 .board__cell--dw .board__cell-label {
-  color: #3a0010;
-  text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+  color: rgba(55,0,12,0.9);
+  text-shadow: 0 1px 0 rgba(255,255,255,0.5);
 }
 .board__cell--dl .board__cell-label {
-  color: #001830;
-  text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+  color: rgba(0,18,42,0.9);
+  text-shadow: 0 1px 0 rgba(255,255,255,0.5);
 }
 
-/* Étoile centrale */
+/* Étoile centrale — plus grande, sous les tuiles */
 .board__cell--start .board__cell-label {
-  font-size: clamp(14px, 3vw, 24px);
-  color: #fff;
-  text-shadow:
-    0 0 8px rgba(255,200,220,0.8),
-    0 2px 4px rgba(0,0,0,0.5);
-  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.4));
+  font-size: clamp(14px, calc(var(--cell-size) * 0.42), 28px);
 }
 
 /* ---------- Cellule occupée ---------- */
-.board__cell--occupied {
-  cursor: default;
-}
+.board__cell--occupied { cursor: default; }
 
 /* ---------- Responsive ---------- */
 @media (max-width: 450px) {

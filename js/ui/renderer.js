@@ -1,7 +1,5 @@
 /**
  * renderer.js — Rendu DOM du jeu
- *
- * Écoute les événements du GameEngine et met à jour l'interface.
  */
 
 import { BOARD_LAYOUT, BOARD_SIZE, BONUS_CSS, BONUS_LABELS, PLAYER_COLORS, AI_LEVEL_LABELS } from '../core/constants.js';
@@ -10,28 +8,31 @@ import { ModalManager, showToast } from './modal-manager.js';
 import { floatScore, launchConfetti, animateRackDraw } from './animations.js';
 
 export class Renderer {
-  /**
-   * @param {import('../core/game-engine.js').GameEngine} engine
-   * @param {Object} elements — références DOM
-   */
   constructor(engine, elements) {
     this._engine  = engine;
     this._els     = elements;
-    /** @type {Map<string, {x:number, y:number, letter:string, value:number, isBlank:boolean, tileId:string}>} */
-    this._tempPlacements = new Map(); // key: `x,y`
-    this._selectedTileIndex = null;  // index dans le rack (click mode)
+    this._tempPlacements = new Map();
+    this._selectedTileIndex = null;
     this._dnd = null;
     this._humanPlayerId = null;
+
+    // Workspace
+    this._workspaceEls       = new Map(); // tileId → HTMLElement
+    this._workspacePositions = new Map(); // tileId → {x, y}
+
+    // Drag en cours
+    this._drag = null; // { el, tileId, letter, value, isBlank, clientX, clientY }
+    this._lastHighlightCell = null;
   }
 
-  /** Initialise le plateau DOM et les listeners. */
   init() {
     this._buildBoard();
     this._attachEngineEvents();
+    this._setupWorkspaceDrag();
   }
 
   /* ================================================================== */
-  /* CONSTRUCTION DU PLATEAU                                              */
+  /* PLATEAU                                                              */
   /* ================================================================== */
 
   _buildBoard() {
@@ -47,6 +48,7 @@ export class Renderer {
         cell.dataset.x = x;
         cell.dataset.y = y;
 
+        // Label centré pour toutes les cases bonus (sous les tuiles via z-index:2)
         if (bonusType > 0) {
           const label = document.createElement('span');
           label.className = 'board__cell-label';
@@ -60,33 +62,40 @@ export class Renderer {
   }
 
   /* ================================================================== */
-  /* ÉVÉNEMENTS DU MOTEUR                                                 */
+  /* ÉVÉNEMENTS MOTEUR                                                    */
   /* ================================================================== */
 
   _attachEngineEvents() {
     const on = (name, fn) => document.addEventListener(`game:${name}`, e => fn(e.detail));
-
-    on('started',       d => this._onGameStarted(d));
-    on('boardUpdate',   d => this._onBoardUpdate(d));
-    on('rackUpdate',    d => this._onRackUpdate(d));
-    on('scoresUpdate',  d => this._onScoresUpdate(d));
-    on('tilesRemaining',d => this._onTilesRemaining(d));
-    on('turnStart',     d => this._onTurnStart(d));
-    on('moveValid',     d => this._onMoveValid(d));
-    on('moveInvalid',   d => this._onMoveInvalid(d));
-    on('message',       d => showToast(d.text, d.type));
-    on('stateChange',   d => this._onStateChange(d));
-    on('gameOver',      d => this._onGameOver(d));
+    on('started',        d => this._onGameStarted(d));
+    on('boardUpdate',    d => this._onBoardUpdate(d));
+    on('rackUpdate',     d => this._onRackUpdate(d));
+    on('scoresUpdate',   d => this._onScoresUpdate(d));
+    on('tilesRemaining', d => this._onTilesRemaining(d));
+    on('turnStart',      d => this._onTurnStart(d));
+    on('moveValid',      d => this._onMoveValid(d));
+    on('moveInvalid',    d => this._onMoveInvalid(d));
+    on('message',        d => showToast(d.text, d.type));
+    on('stateChange',    d => this._onStateChange(d));
+    on('gameOver',       d => this._onGameOver(d));
   }
 
   _onGameStarted({ players }) {
     this._humanPlayerId = players.find(p => p.type === 'human')?.id;
     this._tempPlacements.clear();
     this._selectedTileIndex = null;
+
+    if (this._els.workspace) {
+      this._els.workspace.innerHTML = '';
+      this._workspaceEls.clear();
+      this._workspacePositions.clear();
+      this._drag = null;
+      document.body.classList.remove('tile-held');
+    }
+
     this._buildBoard();
     this._renderScoreboard(players);
 
-    // Initialiser le drag & drop
     this._dnd = new DragDropManager({
       onRackToBoard:  d => this._handleRackToBoard(d),
       onBoardToBoard: d => this._handleBoardToBoard(d),
@@ -95,19 +104,15 @@ export class Renderer {
       onCellClick:    d => this._handleCellClick(d),
     });
 
-    // Attacher les cases
     this._attachAllCells();
   }
 
   _onBoardUpdate({ board }) {
-    // Mettre à jour les tuiles verrouillées sur le plateau
-    const grid = board.grid;
     for (let y = 0; y < BOARD_SIZE; y++) {
       for (let x = 0; x < BOARD_SIZE; x++) {
         const cell = this._getCell(x, y);
-        const tile = grid[y][x];
+        const tile = board.grid[y][x];
         if (tile && !cell.querySelector('.tile--placed')) {
-          // Ne pas écraser une tuile temporaire
           if (!this._tempPlacements.has(`${x},${y}`)) {
             this._renderLockedTile(cell, tile);
           }
@@ -118,43 +123,39 @@ export class Renderer {
 
   _onRackUpdate({ playerId, rack }) {
     if (playerId !== this._humanPlayerId) return;
-    this._renderRack(rack);
+    if (this._els.workspace) {
+      this._renderWorkspace(rack);
+    } else {
+      this._renderRack(rack);
+    }
   }
 
-  _onScoresUpdate({ players }) {
-    this._renderScoreboard(players);
-  }
+  _onScoresUpdate({ players }) { this._renderScoreboard(players); }
 
   _onTilesRemaining({ count }) {
     if (this._els.bagCount) this._els.bagCount.textContent = count;
   }
 
   _onTurnStart({ playerId, playerName, isHuman }) {
-    // Mettre à jour l'indicateur de tour dans le scoreboard
-    document.querySelectorAll('.score-entry').forEach(el => {
-      el.classList.remove('score-entry--active', 'score-entry--thinking');
-    });
+    document.querySelectorAll('.score-entry').forEach(el =>
+      el.classList.remove('score-entry--active', 'score-entry--thinking')
+    );
     const activeEntry = document.querySelector(`.score-entry[data-player-id="${playerId}"]`);
     if (activeEntry) {
       activeEntry.classList.add('score-entry--active');
       if (!isHuman) activeEntry.classList.add('score-entry--thinking');
     }
 
-    // Activer/désactiver les contrôles
     const isMyTurn = playerId === this._humanPlayerId;
     this._setControlsEnabled(isMyTurn);
 
-    // Indicateur de tour
     if (this._els.turnIndicator) {
-      this._els.turnIndicator.textContent = isMyTurn
-        ? 'Votre tour'
-        : `Tour de ${playerName}…`;
+      this._els.turnIndicator.textContent = isMyTurn ? 'Votre tour' : `Tour de ${playerName}…`;
       this._els.turnIndicator.parentElement?.classList.toggle('turn-indicator--active', isMyTurn);
     }
   }
 
-  _onMoveValid({ placements, wordScores, total, scrabble }) {
-    // Verrouiller visuellement les tuiles temporaires
+  _onMoveValid({ placements, total, scrabble }) {
     placements.forEach(p => {
       const cell = this._getCell(p.x, p.y);
       const tempEl = cell.querySelector('.tile--temp');
@@ -167,40 +168,30 @@ export class Renderer {
       this._tempPlacements.delete(`${p.x},${p.y}`);
     });
 
-    // Score flottant
     const firstCell = this._getCell(placements[0]?.x, placements[0]?.y);
-    if (firstCell) {
-      floatScore(firstCell, `+${total}`, scrabble ? '#f0c040' : '#82e0aa');
-    }
-
+    if (firstCell) floatScore(firstCell, `+${total}`, scrabble ? '#f0c040' : '#82e0aa');
     if (scrabble) launchConfetti();
   }
 
   _onMoveInvalid({ reason }) {
     showToast(reason, 'error', 3500);
-    // Secouer le rack
-    const rackEl = this._els.rackContainer;
-    if (rackEl) {
-      rackEl.classList.remove('anim-tile-shake');
-      void rackEl.offsetWidth;
-      rackEl.classList.add('anim-tile-shake');
-      rackEl.addEventListener('animationend', () =>
-        rackEl.classList.remove('anim-tile-shake'), { once: true });
+    const target = this._els.workspace || this._els.rackContainer;
+    if (target) {
+      target.classList.remove('anim-tile-shake');
+      void target.offsetWidth;
+      target.classList.add('anim-tile-shake');
+      target.addEventListener('animationend', () => target.classList.remove('anim-tile-shake'), { once: true });
     }
   }
 
   _onStateChange({ state }) {
-    const gameScreen = document.getElementById('screen-game');
-    if (!gameScreen) return;
-    const overlay = gameScreen.querySelector('.ai-thinking-overlay');
+    const overlay = document.querySelector('.ai-thinking-overlay');
     if (overlay) overlay.style.display = state === 'ai_thinking' ? 'flex' : 'none';
   }
 
   _onGameOver({ sorted }) {
-    // Remplir la modale de fin de partie
     const list = document.getElementById('end-game-results');
     if (!list) { ModalManager.open('modal-end-game'); return; }
-
     list.innerHTML = '';
     sorted.forEach((p, i) => {
       const entry = document.createElement('div');
@@ -211,16 +202,283 @@ export class Renderer {
           <div class="end-game__player-name">${p.name}</div>
           <div class="end-game__player-type">${p.type === 'human' ? 'Vous' : AI_LEVEL_LABELS[p.aiLevel]}</div>
         </div>
-        <div class="end-game__player-score">${p.score} pts</div>
-      `;
+        <div class="end-game__player-score">${p.score} pts</div>`;
       list.appendChild(entry);
     });
-
     setTimeout(() => ModalManager.open('modal-end-game'), 600);
   }
 
   /* ================================================================== */
-  /* RENDU RACK                                                           */
+  /* WORKSPACE — drag fluide (mousedown → mousemove → mouseup)           */
+  /* ================================================================== */
+
+  _setupWorkspaceDrag() {
+    const ws = this._els.workspace;
+    if (!ws) return;
+
+    // Déplacement du tile en cours de drag
+    document.addEventListener('mousemove', (e) => {
+      if (!this._drag) return;
+      this._moveDrag(e.clientX, e.clientY);
+    });
+
+    // Relâchement : déposer
+    document.addEventListener('mouseup', (e) => {
+      if (!this._drag) return;
+      this._endDrag(e.clientX, e.clientY);
+    });
+
+    // Échap : annuler
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this._drag) this._cancelDrag();
+    });
+  }
+
+  _renderWorkspace(rack) {
+    const ws = this._els.workspace;
+    if (!ws) { this._renderRack(rack); return; }
+
+    const existingIds = new Set(rack.filter(Boolean).map(t => t.id));
+
+    // Supprimer les tuiles absentes du rack
+    for (const [id, el] of this._workspaceEls) {
+      if (!existingIds.has(id)) {
+        el.remove();
+        this._workspaceEls.delete(id);
+        this._workspacePositions.delete(id);
+      }
+    }
+
+    // Ajouter les nouvelles tuiles
+    const newTiles = rack.filter(t => t && !this._workspaceEls.has(t.id));
+    if (newTiles.length === 0) return;
+
+    const wsRect = ws.getBoundingClientRect();
+    const wsW  = wsRect.width  || 340;
+    const wsH  = wsRect.height || window.innerHeight;
+
+    // Taille d'une tuile = même que le plateau (cell-size - 2px)
+    const cellSize = parseInt(getComputedStyle(document.documentElement)
+      .getPropertyValue('--cell-size')) || 42;
+    const tileSize = cellSize - 2;
+    const gap = 10;
+
+    // Rangée centrée, légèrement décalée verticalement
+    const rowW  = newTiles.length * (tileSize + gap) - gap;
+    const startX = Math.max(10, (wsW - rowW) / 2);
+    const baseY  = wsH * 0.5 - tileSize / 2;
+
+    const newEls = [];
+    newTiles.forEach((tile, i) => {
+      if (!tile) return;
+      const pos = {
+        x: startX + i * (tileSize + gap),
+        y: baseY + (i % 2 === 0 ? 0 : -(tileSize * 0.35)),
+      };
+      this._workspacePositions.set(tile.id, pos);
+
+      const el = this._createTileEl(tile);
+      el.dataset.tileId = tile.id;
+      el.style.position = 'absolute';
+      el.style.left     = pos.x + 'px';
+      el.style.top      = pos.y + 'px';
+      el.style.cursor   = 'grab';
+
+      ws.appendChild(el);
+      this._workspaceEls.set(tile.id, el);
+      this._attachWorkspaceTileDrag(el, tile);
+      newEls.push(el);
+    });
+
+    animateRackDraw(newEls);
+  }
+
+  _attachWorkspaceTileDrag(el, tile) {
+    el.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this._startDrag(el, tile, e.clientX, e.clientY);
+    });
+
+    // Touch support
+    el.addEventListener('touchstart', (e) => {
+      const t = e.touches[0];
+      e.preventDefault();
+      this._startDrag(el, tile, t.clientX, t.clientY);
+    }, { passive: false });
+  }
+
+  _startDrag(el, tile, clientX, clientY) {
+    if (this._drag) this._cancelDrag(); // annuler un éventuel drag en cours
+
+    const sz = el.offsetWidth || 40;
+
+    this._drag = {
+      el,
+      tileId:  tile.id,
+      letter:  tile.isBlank ? '_' : tile.letter,
+      value:   tile.value,
+      isBlank: tile.isBlank,
+      clientX, clientY,
+    };
+
+    el.style.position      = 'fixed';
+    el.style.left          = (clientX - sz / 2) + 'px';
+    el.style.top           = (clientY - sz / 2) + 'px';
+    el.style.zIndex        = '9999';
+    el.style.pointerEvents = 'none';
+    el.style.transform     = 'scale(1.18) rotate(2deg)';
+    el.style.boxShadow     = '0 14px 36px rgba(0,0,0,0.85), 0 0 0 2px rgba(212,160,23,0.85)';
+    el.style.transition    = 'none';
+    el.style.cursor        = 'grabbing';
+
+    document.body.classList.add('tile-held');
+  }
+
+  _moveDrag(clientX, clientY) {
+    const { el } = this._drag;
+    const sz = el.offsetWidth || 40;
+    el.style.left = (clientX - sz / 2) + 'px';
+    el.style.top  = (clientY - sz / 2) + 'px';
+    this._drag.clientX = clientX;
+    this._drag.clientY = clientY;
+
+    // Surbrillance de la case cible
+    const under = document.elementFromPoint(clientX, clientY);
+    const newCell = under?.closest('.board__cell') ?? null;
+
+    if (newCell !== this._lastHighlightCell) {
+      this._lastHighlightCell?.classList.remove('drag-over');
+      this._lastHighlightCell = null;
+      if (newCell && !newCell.querySelector('.tile--placed') && !newCell.querySelector('.tile--temp')) {
+        newCell.classList.add('drag-over');
+        this._lastHighlightCell = newCell;
+      }
+    }
+  }
+
+  _endDrag(clientX, clientY) {
+    if (!this._drag) return;
+
+    // Nettoyer highlight
+    this._lastHighlightCell?.classList.remove('drag-over');
+    this._lastHighlightCell = null;
+
+    const { el, tileId, letter, value, isBlank } = this._drag;
+    document.body.classList.remove('tile-held');
+
+    // Détecter la cible (le tile est pointer-events:none → on voit à travers)
+    const under = document.elementFromPoint(clientX, clientY);
+    const boardCell = under?.closest('.board__cell');
+
+    if (boardCell) {
+      const x = parseInt(boardCell.dataset.x);
+      const y = parseInt(boardCell.dataset.y);
+      if (!isNaN(x) && !isNaN(y) &&
+          !this._engine.board.getTile(x, y) &&
+          !this._tempPlacements.has(`${x},${y}`)) {
+
+        if (isBlank) {
+          const human = this._engine.players.find(p => p.isHuman);
+          const tileObj = human?.rack.find(t => t?.id === tileId) || { id: tileId };
+          this._openJokerModal(tileObj, (chosenLetter) => {
+            this._placeTileFromDrag(x, y, { tileId, letter: chosenLetter, value: 0, isBlank: true });
+          });
+        } else {
+          this._placeTileFromDrag(x, y, { tileId, letter, value, isBlank });
+        }
+        this._drag = null;
+        return;
+      }
+    }
+
+    // Sinon : déposer dans le workspace
+    this._dropDragToWorkspace(clientX, clientY);
+    this._drag = null;
+  }
+
+  _placeTileFromDrag(x, y, data) {
+    const drag = this._drag;
+    if (!drag) return;
+
+    // Retirer le tile du workspace
+    drag.el.remove();
+    this._workspaceEls.delete(drag.tileId);
+    this._workspacePositions.delete(drag.tileId);
+
+    // Retirer du rack
+    const human = this._engine.players.find(p => p.isHuman);
+    if (human) {
+      const idx = human.rack.findIndex(t => t?.id === drag.tileId);
+      if (idx !== -1) human.rack.splice(idx, 1);
+    }
+
+    // Créer la tuile temporaire sur le plateau
+    const cell = this._getCell(x, y);
+    if (!cell) return;
+
+    const tileEl = this._createTileEl({ letter: data.letter, value: data.value, isBlank: data.isBlank });
+    tileEl.classList.add('tile--temp');
+    cell.appendChild(tileEl);
+
+    this._tempPlacements.set(`${x},${y}`, data);
+
+    if (this._dnd) {
+      this._dnd.attachBoardTile(tileEl, x, y, {
+        tileId: data.tileId, letter: data.letter, value: data.value, isBlank: data.isBlank,
+      });
+    }
+  }
+
+  _dropDragToWorkspace(clientX, clientY) {
+    const { el, tileId } = this._drag;
+    const ws = this._els.workspace;
+    if (!ws) return;
+
+    const wsRect = ws.getBoundingClientRect();
+    const sz = el.offsetWidth || 40;
+
+    const x = Math.max(0, Math.min(wsRect.width  - sz, clientX - wsRect.left - sz / 2));
+    const y = Math.max(0, Math.min(wsRect.height - sz, clientY - wsRect.top  - sz / 2));
+
+    el.style.position      = 'absolute';
+    el.style.left          = x + 'px';
+    el.style.top           = y + 'px';
+    el.style.zIndex        = '';
+    el.style.pointerEvents = '';
+    el.style.transform     = '';
+    el.style.boxShadow     = '';
+    el.style.transition    = '';
+    el.style.cursor        = 'grab';
+
+    ws.appendChild(el);
+    this._workspacePositions.set(tileId, { x, y });
+  }
+
+  _cancelDrag() {
+    if (!this._drag) return;
+    const { el, tileId } = this._drag;
+    const pos = this._workspacePositions.get(tileId) ?? { x: 0, y: 0 };
+
+    el.style.position      = 'absolute';
+    el.style.left          = pos.x + 'px';
+    el.style.top           = pos.y + 'px';
+    el.style.zIndex        = '';
+    el.style.pointerEvents = '';
+    el.style.transform     = '';
+    el.style.boxShadow     = '';
+    el.style.transition    = '';
+    el.style.cursor        = 'grab';
+
+    this._els.workspace?.appendChild(el);
+    this._lastHighlightCell?.classList.remove('drag-over');
+    this._lastHighlightCell = null;
+    this._drag = null;
+    document.body.classList.remove('tile-held');
+  }
+
+  /* ================================================================== */
+  /* RACK FALLBACK (mobile / sans workspace)                              */
   /* ================================================================== */
 
   _renderRack(rack) {
@@ -246,31 +504,25 @@ export class Renderer {
             value: tile.value, isBlank: tile.isBlank,
           });
         }
-
-        // Click pour sélectionner (mode sans drag)
         tileEl.addEventListener('click', () => this._selectRackTile(i, tileEl, container));
       }
 
       if (this._dnd) this._dnd.attachRackSlot(slot, i);
       container.appendChild(slot);
     }
-
-    // Animer les nouvelles tuiles
     animateRackDraw(newEls);
   }
 
   /* ================================================================== */
-  /* RENDU SCOREBOARD                                                     */
+  /* SCOREBOARD                                                           */
   /* ================================================================== */
 
   _renderScoreboard(players) {
     const list = this._els.scoreList;
     if (!list) return;
 
-    // Mettre à jour les entrées existantes ou les créer
     players.forEach(p => {
       let entry = list.querySelector(`.score-entry[data-player-id="${p.id}"]`);
-
       if (!entry) {
         entry = document.createElement('li');
         entry.className = 'score-entry';
@@ -282,12 +534,10 @@ export class Renderer {
             <div class="score-entry__badge">${p.type === 'human' ? 'Joueur' : AI_LEVEL_LABELS[p.aiLevel]}</div>
           </div>
           <div class="score-entry__score" data-score>0</div>
-          <div class="score-entry__thinking"></div>
-        `;
+          <div class="score-entry__thinking"></div>`;
         list.appendChild(entry);
       }
 
-      // Mettre à jour le score avec animation delta
       const scoreEl = entry.querySelector('[data-score]');
       const oldScore = parseInt(scoreEl?.textContent || '0');
       if (scoreEl && p.score !== oldScore) {
@@ -305,14 +555,11 @@ export class Renderer {
   }
 
   /* ================================================================== */
-  /* TUILES VERROUILLÉES (posées définitivement)                          */
+  /* TUILES VERROUILLÉES                                                  */
   /* ================================================================== */
 
   _renderLockedTile(cell, tileData) {
-    // Enlever les éléments existants non-tuiles (labels de bonus)
-    const existing = cell.querySelector('.tile');
-    if (existing) return; // déjà rendu
-
+    if (cell.querySelector('.tile')) return;
     const tileEl = this._createTileEl(tileData);
     tileEl.classList.add('tile--placed', 'anim-tile-lock');
     tileEl.draggable = false;
@@ -320,7 +567,7 @@ export class Renderer {
   }
 
   /* ================================================================== */
-  /* DRAG & DROP HANDLERS                                                 */
+  /* DRAG & DROP HTML5 (tuiles temporaires sur plateau)                  */
   /* ================================================================== */
 
   _handleRackToBoard({ index, tileId, letter, value, isBlank, targetX, targetY }) {
@@ -330,59 +577,44 @@ export class Renderer {
 
     const rack = this._engine.players.find(p => p.isHuman)?.rack;
     if (!rack) return;
-
     const tile = rack[index];
     if (!tile) return;
 
-    // Si joker → ouvrir modale de choix
     if (tile.isBlank) {
       this._openJokerModal(tile, (chosenLetter) => {
         tile.blankAs = chosenLetter;
-        this._placeTempTile(targetX, targetY, {
-          tileId: tile.id, letter: chosenLetter,
-          value: 0, isBlank: true, rackIndex: index,
-        });
+        this._placeTempTile(targetX, targetY, { tileId: tile.id, letter: chosenLetter, value: 0, isBlank: true, rackIndex: index });
       });
       return;
     }
-
-    this._placeTempTile(targetX, targetY, {
-      tileId: tile.id, letter: tile.letter,
-      value: tile.value, isBlank: false, rackIndex: index,
-    });
+    this._placeTempTile(targetX, targetY, { tileId: tile.id, letter: tile.letter, value: tile.value, isBlank: false, rackIndex: index });
   }
 
-  _handleBoardToBoard({ x, y, tileId, letter, value, isBlank, targetX, targetY }) {
+  _handleBoardToBoard({ x, y, targetX, targetY }) {
     const key    = `${x},${y}`;
     const newKey = `${targetX},${targetY}`;
     if (this._engine.board.getTile(targetX, targetY)) return;
     if (this._tempPlacements.has(newKey)) return;
-
     const placement = this._tempPlacements.get(key);
     if (!placement) return;
-
     this._removeTempTile(x, y);
     this._placeTempTile(targetX, targetY, { ...placement });
   }
 
   _handleBoardToRack({ x, y }) {
-    const key = `${x},${y}`;
-    const placement = this._tempPlacements.get(key);
+    const placement = this._tempPlacements.get(`${x},${y}`);
     if (!placement) return;
-
     this._removeTempTile(x, y);
 
     const human = this._engine.players.find(p => p.isHuman);
     if (!human) return;
-
     human.rack.push({
-      id:      placement.tileId,
-      letter:  placement.isBlank ? '_' : placement.letter,
-      value:   placement.value,
-      isBlank: placement.isBlank,
-      blankAs: null,
+      id: placement.tileId, letter: placement.isBlank ? '_' : placement.letter,
+      value: placement.value, isBlank: placement.isBlank, blankAs: null,
     });
-    this._renderRack(human.rack);
+
+    if (this._els.workspace) this._renderWorkspace(human.rack);
+    else this._renderRack(human.rack);
   }
 
   _handleRackReorder({ fromIndex, toIndex }) {
@@ -390,10 +622,12 @@ export class Renderer {
     if (!human) return;
     const tile = human.rack.splice(fromIndex, 1)[0];
     human.rack.splice(toIndex, 0, tile);
-    this._renderRack(human.rack);
+    if (!this._els.workspace) this._renderRack(human.rack);
   }
 
   _handleCellClick({ x, y }) {
+    // En mode workspace, le placement se fait via drag (mouseup).
+    // Ce handler gère uniquement le mode rack classique (mobile).
     if (this._selectedTileIndex === null) return;
     const key = `${x},${y}`;
     if (this._engine.board.getTile(x, y) || this._tempPlacements.has(key)) return;
@@ -406,19 +640,12 @@ export class Renderer {
     if (tile.isBlank) {
       this._openJokerModal(tile, (chosenLetter) => {
         tile.blankAs = chosenLetter;
-        this._placeTempTile(x, y, {
-          tileId: tile.id, letter: chosenLetter,
-          value: 0, isBlank: true, rackIndex: this._selectedTileIndex,
-        });
+        this._placeTempTile(x, y, { tileId: tile.id, letter: chosenLetter, value: 0, isBlank: true, rackIndex: this._selectedTileIndex });
         this._selectedTileIndex = null;
       });
       return;
     }
-
-    this._placeTempTile(x, y, {
-      tileId: tile.id, letter: tile.letter,
-      value: tile.value, isBlank: false, rackIndex: this._selectedTileIndex,
-    });
+    this._placeTempTile(x, y, { tileId: tile.id, letter: tile.letter, value: tile.value, isBlank: false, rackIndex: this._selectedTileIndex });
     this._selectedTileIndex = null;
   }
 
@@ -430,39 +657,38 @@ export class Renderer {
     const cell = this._getCell(x, y);
     if (!cell) return;
 
-    // Retirer la tuile du rack DOM
     const human = this._engine.players.find(p => p.isHuman);
     if (human) {
-      const rackIdx = human.rack.findIndex(t => t.id === data.tileId);
+      const rackIdx = human.rack.findIndex(t => t?.id === data.tileId);
       if (rackIdx !== -1) {
         data.rackIndex = rackIdx;
         human.rack.splice(rackIdx, 1);
-        this._renderRack(human.rack);
+        // Retirer du workspace si présent
+        const wsEl = this._workspaceEls.get(data.tileId);
+        if (wsEl) {
+          wsEl.remove();
+          this._workspaceEls.delete(data.tileId);
+          this._workspacePositions.delete(data.tileId);
+        } else if (!this._els.workspace) {
+          this._renderRack(human.rack);
+        }
       }
     }
 
-    // Créer la tuile temporaire sur le plateau
-    const tileEl = this._createTileEl({
-      letter: data.letter, value: data.value, isBlank: data.isBlank,
-    });
+    const tileEl = this._createTileEl({ letter: data.letter, value: data.value, isBlank: data.isBlank });
     tileEl.classList.add('tile--temp');
     cell.appendChild(tileEl);
-
     this._tempPlacements.set(`${x},${y}`, data);
 
-    // Attacher le drag pour repositionnement
     if (this._dnd) {
       this._dnd.attachBoardTile(tileEl, x, y, {
-        tileId: data.tileId, letter: data.letter,
-        value: data.value, isBlank: data.isBlank,
+        tileId: data.tileId, letter: data.letter, value: data.value, isBlank: data.isBlank,
       });
     }
   }
 
   _removeTempTile(x, y) {
-    const cell   = this._getCell(x, y);
-    const tileEl = cell?.querySelector('.tile--temp');
-    if (tileEl) tileEl.remove();
+    this._getCell(x, y)?.querySelector('.tile--temp')?.remove();
     this._tempPlacements.delete(`${x},${y}`);
   }
 
@@ -470,57 +696,40 @@ export class Renderer {
   /* ACTIONS BOUTONS                                                      */
   /* ================================================================== */
 
-  /** Rappelle toutes les tuiles temporaires dans le rack. */
   recallAll() {
     const human = this._engine.players.find(p => p.isHuman);
     if (!human) return;
 
     for (const [key, placement] of this._tempPlacements) {
       const [x, y] = key.split(',').map(Number);
-      const cell = this._getCell(x, y);
-      cell?.querySelector('.tile--temp')?.remove();
-
+      this._getCell(x, y)?.querySelector('.tile--temp')?.remove();
       human.rack.push({
-        id:      placement.tileId,
-        letter:  placement.isBlank ? '_' : placement.letter,
-        value:   placement.value,
-        isBlank: placement.isBlank,
-        blankAs: null,
+        id: placement.tileId, letter: placement.isBlank ? '_' : placement.letter,
+        value: placement.value, isBlank: placement.isBlank, blankAs: null,
       });
     }
-
     this._tempPlacements.clear();
-    this._renderRack(human.rack);
+
+    if (this._els.workspace) this._renderWorkspace(human.rack);
+    else this._renderRack(human.rack);
   }
 
-  /** Soumet le coup au moteur. */
   submitMove() {
     const placements = [];
     this._tempPlacements.forEach((data, key) => {
       const [x, y] = key.split(',').map(Number);
-      placements.push({
-        x, y,
-        id: data.tileId,
-        letter: data.letter,
-        value: data.value,
-        isBlank: data.isBlank,
-      });
+      placements.push({ x, y, id: data.tileId, letter: data.letter, value: data.value, isBlank: data.isBlank });
     });
     this._engine.submitMove(placements);
   }
 
-  /** Mélange le rack humain. */
-  shuffleRack() {
-    this._engine.shuffleRack();
-  }
+  shuffleRack() { this._engine.shuffleRack(); }
 
   /* ================================================================== */
   /* HELPERS                                                              */
   /* ================================================================== */
 
-  _getCell(x, y) {
-    return this._els.board.children[y * BOARD_SIZE + x];
-  }
+  _getCell(x, y) { return this._els.board.children[y * BOARD_SIZE + x]; }
 
   _createTileEl(tile) {
     const el = document.createElement('div');
@@ -540,7 +749,6 @@ export class Renderer {
   }
 
   _selectRackTile(index, tileEl, container) {
-    // Désélectionner le précédent
     container.querySelectorAll('.tile--selected').forEach(t => t.classList.remove('tile--selected'));
     if (this._selectedTileIndex === index) {
       this._selectedTileIndex = null;
@@ -551,8 +759,7 @@ export class Renderer {
   }
 
   _setControlsEnabled(enabled) {
-    const ids = ['btn-validate','btn-recall','btn-shuffle','btn-exchange','btn-pass'];
-    ids.forEach(id => {
+    ['btn-validate','btn-recall','btn-shuffle','btn-exchange','btn-pass'].forEach(id => {
       const btn = document.getElementById(id);
       if (btn) btn.disabled = !enabled;
     });
@@ -571,16 +778,12 @@ export class Renderer {
     ModalManager.open('modal-joker');
     const keyboard = document.getElementById('joker-keyboard');
     if (!keyboard) { callback('A'); return; }
-
     keyboard.innerHTML = '';
     'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(letter => {
       const btn = document.createElement('button');
       btn.className = 'joker-key';
       btn.textContent = letter;
-      btn.addEventListener('click', () => {
-        ModalManager.close('modal-joker');
-        callback(letter);
-      });
+      btn.addEventListener('click', () => { ModalManager.close('modal-joker'); callback(letter); });
       keyboard.appendChild(btn);
     });
   }

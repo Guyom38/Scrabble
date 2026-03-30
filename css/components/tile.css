@@ -214,3 +214,22 @@
 .tile--shake {
   animation: tileInvalidShake 500ms ease;
 }
+
+/* Curseur masqué pendant le drag */
+body.tile-held,
+body.tile-held * {
+  cursor: grabbing !important;
+}
+
+/* Tuiles dans le workspace — même taille que sur le plateau */
+.workspace .tile {
+  width:  calc(var(--cell-size) - 2px);
+  height: calc(var(--cell-size) - 2px);
+  font-size:    calc(var(--cell-size) * 0.44);
+  border-radius: 4px;
+}
+.workspace .tile .tile__value {
+  font-size: calc(var(--cell-size) * 0.16);
+  bottom: calc(var(--cell-size) * 0.04);
+  right:  calc(var(--cell-size) * 0.06);
+}
