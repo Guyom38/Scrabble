@@ -89,20 +89,24 @@
       >
     </div>
 
-    <!-- Nombre d'adversaires -->
+    <!-- Nombre total de joueurs -->
     <div class="config-section">
-      <div class="config-section__label">Adversaires IA</div>
-      <div class="ai-count-selector" role="group" aria-label="Nombre d'adversaires">
-        <button class="ai-count-btn" data-count="1" aria-pressed="true">1</button>
-        <button class="ai-count-btn" data-count="2" aria-pressed="false">2</button>
-        <button class="ai-count-btn" data-count="3" aria-pressed="false">3</button>
+      <div class="config-section__label">Nombre de joueurs</div>
+      <div class="player-count-selector" role="group" aria-label="Nombre de joueurs">
+        <button class="player-count-btn" data-count="2" aria-pressed="true">2</button>
+        <button class="player-count-btn" data-count="3" aria-pressed="false">3</button>
+        <button class="player-count-btn" data-count="4" aria-pressed="false">4</button>
+        <button class="player-count-btn" data-count="5" aria-pressed="false">5</button>
+        <button class="player-count-btn" data-count="6" aria-pressed="false">6</button>
+        <button class="player-count-btn" data-count="7" aria-pressed="false">7</button>
+        <button class="player-count-btn" data-count="8" aria-pressed="false">8</button>
       </div>
     </div>
 
-    <!-- Niveaux des IA -->
+    <!-- Configuration de chaque joueur additionnel -->
     <div class="config-section">
-      <div class="config-section__label">Niveau de chaque IA</div>
-      <div id="ai-configs" class="ai-configs"></div>
+      <div class="config-section__label">Configuration des joueurs</div>
+      <div id="player-configs" class="player-configs"></div>
     </div>
 
     <div class="config-footer">
@@ -332,6 +336,15 @@
     </div>
     <div class="modal__footer">
       <button class="modal__close btn btn--primary">Compris !</button>
+    </div>
+  </div>
+</div>
+
+<!-- Ruban de tour (overlay global) -->
+<div id="turn-ribbon" class="turn-ribbon" aria-hidden="true">
+  <div class="turn-ribbon__band">
+    <div class="turn-ribbon__content">
+      <span class="turn-ribbon__name">Joueur</span><span class="turn-ribbon__msg"> à toi de jouer !</span>
     </div>
   </div>
 </div>

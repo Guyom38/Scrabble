@@ -46,8 +46,6 @@ export class GameEngine {
    * @param {{ playerName:string, aiCount:number, aiLevels:string[] }} config
    */
   newGame(config) {
-    const { playerName, aiCount, aiLevels } = config;
-
     this.board       = new Board();
     this.bag         = new TileBag();
     this.scorer      = new Scorer();
@@ -56,17 +54,26 @@ export class GameEngine {
     this.turnNumber  = 0;
     this.isFirstTurn = true;
 
-    // Joueur humain
-    this.players.push(new Player({
-      id: 'p0', name: playerName || 'Joueur', type: PLAYER_TYPES.HUMAN, colorIndex: 0,
-    }));
-
-    // Joueurs IA
-    for (let i = 0; i < aiCount; i++) {
+    if (config.players) {
+      // Nouveau format : tableau de joueurs
+      config.players.forEach((p, i) => {
+        this.players.push(new Player({
+          id: `p${i}`, name: p.name, type: p.type,
+          aiLevel: p.aiLevel || AI_LEVELS.MEDIUM, colorIndex: i,
+        }));
+      });
+    } else {
+      // Ancien format (rétro-compatibilité)
+      const { playerName, aiCount, aiLevels } = config;
       this.players.push(new Player({
-        id: `ai${i}`, name: AI_DEFAULT_NAMES[i], type: PLAYER_TYPES.AI,
-        aiLevel: aiLevels[i] || AI_LEVELS.MEDIUM, colorIndex: i + 1,
+        id: 'p0', name: playerName || 'Joueur', type: PLAYER_TYPES.HUMAN, colorIndex: 0,
       }));
+      for (let i = 0; i < aiCount; i++) {
+        this.players.push(new Player({
+          id: `ai${i}`, name: AI_DEFAULT_NAMES[i], type: PLAYER_TYPES.AI,
+          aiLevel: aiLevels[i] || AI_LEVELS.MEDIUM, colorIndex: i + 1,
+        }));
+      }
     }
 
     // Distribution initiale
@@ -217,8 +224,6 @@ export class GameEngine {
       emit('message', { text: `${mainWord} — ${total} pts`, type: 'success' });
     }
 
-    SaveManager.save(this._buildSave());
-
     // Fin de partie si le joueur a vidé son chevalet et le sac est vide
     if (player.rackSize === 0 && this.bag.isEmpty) {
       this._endGame(player);
@@ -248,6 +253,7 @@ export class GameEngine {
   _nextTurn() {
     this.turnIndex = (this.turnIndex + 1) % this.players.length;
     this.turnNumber++;
+    SaveManager.save(this._buildSave());
     this._startTurn();
   }
 

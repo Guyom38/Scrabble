@@ -153,6 +153,8 @@ export class Renderer {
       this._els.turnIndicator.textContent = isMyTurn ? 'Votre tour' : `Tour de ${playerName}…`;
       this._els.turnIndicator.parentElement?.classList.toggle('turn-indicator--active', isMyTurn);
     }
+
+    if (isHuman) this._showTurnRibbon(playerName);
   }
 
   _onMoveValid({ placements, total, scrabble }) {
@@ -200,7 +202,7 @@ export class Renderer {
         <div class="end-game__rank">${i === 0 ? '🏆' : i + 1}</div>
         <div class="end-game__player-info">
           <div class="end-game__player-name">${p.name}</div>
-          <div class="end-game__player-type">${p.type === 'human' ? 'Vous' : AI_LEVEL_LABELS[p.aiLevel]}</div>
+          <div class="end-game__player-type">${p.type === 'human' ? 'Humain' : AI_LEVEL_LABELS[p.aiLevel]}</div>
         </div>
         <div class="end-game__player-score">${p.score} pts</div>`;
       list.appendChild(entry);
@@ -254,27 +256,22 @@ export class Renderer {
     if (newTiles.length === 0) return;
 
     const wsRect = ws.getBoundingClientRect();
-    const wsW  = wsRect.width  || 340;
-    const wsH  = wsRect.height || window.innerHeight;
+    const wsW = wsRect.width  || 340;
+    const wsH = wsRect.height || window.innerHeight;
 
-    // Taille d'une tuile = même que le plateau (cell-size - 2px)
     const cellSize = parseInt(getComputedStyle(document.documentElement)
       .getPropertyValue('--cell-size')) || 42;
     const tileSize = cellSize - 2;
-    const gap = 10;
+    const margin   = 12;
 
-    // Rangée centrée, légèrement décalée verticalement
-    const rowW  = newTiles.length * (tileSize + gap) - gap;
-    const startX = Math.max(10, (wsW - rowW) / 2);
-    const baseY  = wsH * 0.5 - tileSize / 2;
+    // Positions déjà occupées (y compris celles draggées hors workspace)
+    const occupied = [...this._workspacePositions.values()];
 
     const newEls = [];
-    newTiles.forEach((tile, i) => {
-      if (!tile) return;
-      const pos = {
-        x: startX + i * (tileSize + gap),
-        y: baseY + (i % 2 === 0 ? 0 : -(tileSize * 0.35)),
-      };
+    for (const tile of newTiles) {
+      if (!tile) continue;
+      const pos = this._findFreeWorkspacePos(tileSize, margin, wsW, wsH, occupied);
+      occupied.push(pos);
       this._workspacePositions.set(tile.id, pos);
 
       const el = this._createTileEl(tile);
@@ -288,7 +285,7 @@ export class Renderer {
       this._workspaceEls.set(tile.id, el);
       this._attachWorkspaceTileDrag(el, tile);
       newEls.push(el);
-    });
+    }
 
     animateRackDraw(newEls);
   }
@@ -531,7 +528,7 @@ export class Renderer {
           <div class="score-entry__color" style="background:${PLAYER_COLORS[p.colorIndex]};box-shadow:0 0 8px ${PLAYER_COLORS[p.colorIndex]}"></div>
           <div class="score-entry__info">
             <div class="score-entry__name">${p.name}</div>
-            <div class="score-entry__badge">${p.type === 'human' ? 'Joueur' : AI_LEVEL_LABELS[p.aiLevel]}</div>
+            <div class="score-entry__badge">${p.type === 'human' ? 'Humain' : AI_LEVEL_LABELS[p.aiLevel]}</div>
           </div>
           <div class="score-entry__score" data-score>0</div>
           <div class="score-entry__thinking"></div>`;
@@ -786,5 +783,63 @@ export class Renderer {
       btn.addEventListener('click', () => { ModalManager.close('modal-joker'); callback(letter); });
       keyboard.appendChild(btn);
     });
+  }
+
+  /* ================================================================== */
+  /* RUBAN DE TOUR                                                        */
+  /* ================================================================== */
+
+  _showTurnRibbon(playerName) {
+    const ribbon = document.getElementById('turn-ribbon');
+    if (!ribbon) return;
+    const nameEl = ribbon.querySelector('.turn-ribbon__name');
+    if (nameEl) nameEl.textContent = playerName;
+
+    ribbon.classList.remove('turn-ribbon--active');
+    void ribbon.offsetWidth; // force reflow
+    ribbon.classList.add('turn-ribbon--active');
+
+    ribbon.addEventListener('animationend', () => {
+      ribbon.classList.remove('turn-ribbon--active');
+    }, { once: true });
+  }
+
+  /* ================================================================== */
+  /* PLACEMENT LIBRE DANS LE WORKSPACE                                   */
+  /* ================================================================== */
+
+  _findFreeWorkspacePos(tileSize, margin, wsW, wsH, occupied) {
+    const step = tileSize + margin;
+    const topPad = 36; // espace pour le label "VOS TUILES"
+
+    let cx, cy;
+    if (occupied.length === 0) {
+      cx = wsW / 2;
+      cy = wsH / 2;
+    } else {
+      cx = occupied.reduce((s, p) => s + p.x + tileSize / 2, 0) / occupied.length;
+      cy = occupied.reduce((s, p) => s + p.y + tileSize / 2, 0) / occupied.length;
+    }
+
+    for (let ring = 0; ring <= 14; ring++) {
+      const pts = ring === 0
+        ? [{ ax: 0, ay: 0 }]
+        : Array.from({ length: ring * 8 }, (_, k) => {
+            const a = (k / (ring * 8)) * Math.PI * 2;
+            return { ax: Math.cos(a) * ring * step * 0.95, ay: Math.sin(a) * ring * step * 0.95 };
+          });
+
+      for (const { ax, ay } of pts) {
+        const x = Math.max(margin, Math.min(wsW - tileSize - margin, cx + ax - tileSize / 2));
+        const y = Math.max(topPad, Math.min(wsH - tileSize - margin, cy + ay - tileSize / 2));
+
+        const overlaps = occupied.some(p =>
+          Math.abs(p.x - x) < tileSize + margin * 0.55 &&
+          Math.abs(p.y - y) < tileSize + margin * 0.55
+        );
+        if (!overlaps) return { x, y };
+      }
+    }
+    return { x: margin, y: topPad };
   }
 }

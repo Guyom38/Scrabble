@@ -116,10 +116,19 @@ export const AI_LEVEL_LABELS = {
 };
 
 /** Couleurs par index de joueur */
-export const PLAYER_COLORS = ['#f0c040', '#82e0aa', '#85c1e9', '#f1948a'];
+export const PLAYER_COLORS = [
+  '#f0c040',  // or (humain)
+  '#82e0aa',  // vert
+  '#85c1e9',  // bleu
+  '#f1948a',  // rose
+  '#bb8fce',  // violet
+  '#f0b27a',  // orange
+  '#76d7c4',  // turquoise
+  '#f9e79f',  // jaune
+];
 
 /** Noms par défaut des IA */
-export const AI_DEFAULT_NAMES = ['Alphonse', 'Bertrand', 'Claudette'];
+export const AI_DEFAULT_NAMES = ['Alphonse', 'Bertrand', 'Claudette', 'Dimitri', 'Éloise', 'François', 'Gaëlle'];
 
 /** Nombre max de passes consécutives avant fin de partie */
 export const MAX_CONSECUTIVE_PASSES = 6;

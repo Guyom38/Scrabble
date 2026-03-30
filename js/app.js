@@ -98,71 +98,111 @@ function _refreshMenuButtons() {
 /* ================================================================== */
 
 function _setupConfigPage() {
-  let aiCount  = 1;
-  const aiLevels = [AI_LEVELS.MEDIUM, AI_LEVELS.MEDIUM, AI_LEVELS.MEDIUM];
+  let totalPlayers = 2;
 
-  // --- Sélecteur nombre d'IA ---
-  const countBtns = document.querySelectorAll('.ai-count-btn');
+  // État de chaque joueur additionnel (index 0 = joueur 2, …, index 6 = joueur 8)
+  const playerStates = Array.from({ length: 7 }, (_, i) => ({
+    type: 'ai',
+    name: AI_DEFAULT_NAMES[i] || `Joueur ${i + 2}`,
+    level: AI_LEVELS.MEDIUM,
+  }));
+
+  // Sélecteur nombre total de joueurs
+  const countBtns = document.querySelectorAll('.player-count-btn');
   countBtns.forEach(btn => {
     btn.addEventListener('click', () => {
-      aiCount = parseInt(btn.dataset.count);
+      totalPlayers = parseInt(btn.dataset.count);
       countBtns.forEach(b => b.classList.toggle('active', b === btn));
-      _updateAiConfigRows(aiCount, aiLevels);
+      _updatePlayerRows(totalPlayers, playerStates);
     });
   });
 
-  // Sélectionner 1 par défaut
   countBtns[0]?.classList.add('active');
-  _updateAiConfigRows(aiCount, aiLevels);
+  _updatePlayerRows(totalPlayers, playerStates);
 
-  // --- Bouton Démarrer ---
+  // Bouton Démarrer
   document.getElementById('btn-start-game')?.addEventListener('click', () => {
-    const playerName = (document.getElementById('player-name')?.value.trim() || 'Joueur').substring(0, 20);
+    const p1Name = (document.getElementById('player-name')?.value.trim() || 'Joueur').substring(0, 20);
 
-    // Lire les niveaux sélectionnés
-    const finalLevels = [];
-    for (let i = 0; i < aiCount; i++) {
-      const activeBtn = document.querySelector(`.level-btn.active[data-ai="${i}"]`);
-      finalLevels.push(activeBtn?.dataset.level || AI_LEVELS.MEDIUM);
+    const players = [{ name: p1Name, type: 'human', aiLevel: AI_LEVELS.MEDIUM }];
+
+    for (let i = 0; i < totalPlayers - 1; i++) {
+      const row = document.querySelector(`.player-config-row[data-player="${i}"]`);
+      const activeTypeBtn = row?.querySelector('.player-type-btn.active');
+      const type = activeTypeBtn?.dataset.type || 'ai';
+      const nameInput = row?.querySelector('.player-name-input');
+      const rawName = nameInput?.value.trim();
+      const name = (rawName || playerStates[i].name).substring(0, 20);
+      const activeLevelBtn = row?.querySelector('.level-btn.active');
+      const aiLevel = activeLevelBtn?.dataset.level || AI_LEVELS.MEDIUM;
+      players.push({ name, type, aiLevel });
     }
 
-    _startGame({ playerName, aiCount, aiLevels: finalLevels });
+    _startGame({ players });
   });
 }
 
-function _updateAiConfigRows(count, levels) {
-  const container = document.getElementById('ai-configs');
+function _updatePlayerRows(totalPlayers, states) {
+  const container = document.getElementById('player-configs');
   if (!container) return;
   container.innerHTML = '';
 
-  for (let i = 0; i < count; i++) {
+  for (let i = 0; i < totalPlayers - 1; i++) {
+    const state = states[i];
+    const color = PLAYER_COLORS[i + 1] || '#aaaaaa';
+    const isHuman = state.type === 'human';
+
     const row = document.createElement('div');
-    row.className = 'ai-config-row';
+    row.className = 'player-config-row';
+    row.dataset.player = i;
+
     row.innerHTML = `
-      <div class="ai-config-row__name" style="color:${PLAYER_COLORS[i+1]}">${AI_DEFAULT_NAMES[i]}</div>
-      <div class="level-selector">
-        <button class="level-btn ${levels[i]==='easy'?'active':''}"   data-level="easy"   data-ai="${i}">Facile</button>
-        <button class="level-btn ${levels[i]==='medium'?'active':''}" data-level="medium" data-ai="${i}">Moyen</button>
-        <button class="level-btn ${levels[i]==='hard'?'active':''}"   data-level="hard"   data-ai="${i}">Difficile</button>
+      <span class="player-config-row__label" style="color:${color}">Joueur ${i + 2}</span>
+      <div class="player-type-toggle">
+        <button class="player-type-btn ${isHuman ? 'active' : ''}" data-type="human">Humain</button>
+        <button class="player-type-btn ${!isHuman ? 'active' : ''}" data-type="ai">IA</button>
+      </div>
+      <input class="player-name-input" type="text"
+        placeholder="${isHuman ? `Joueur ${i + 2}` : state.name}"
+        value="${isHuman ? '' : state.name}" maxlength="20" autocomplete="off">
+      <div class="level-selector${isHuman ? ' level-selector--hidden' : ''}">
+        <button class="level-btn ${state.level === 'easy'   ? 'active' : ''}" data-level="easy">Facile</button>
+        <button class="level-btn ${state.level === 'medium' ? 'active' : ''}" data-level="medium">Moyen</button>
+        <button class="level-btn ${state.level === 'hard'   ? 'active' : ''}" data-level="hard">Difficile</button>
       </div>
     `;
-    // Activer le bon bouton par défaut
-    if (!row.querySelector('.level-btn.active')) {
-      row.querySelector(`.level-btn[data-level="medium"]`)?.classList.add('active');
-    }
+
+    // Toggle Humain / IA
+    row.querySelectorAll('.player-type-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        row.querySelectorAll('.player-type-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.type = btn.dataset.type;
+        const levelSel  = row.querySelector('.level-selector');
+        const nameInput = row.querySelector('.player-name-input');
+        if (state.type === 'human') {
+          levelSel.classList.add('level-selector--hidden');
+          nameInput.value = '';
+          nameInput.placeholder = `Joueur ${i + 2}`;
+        } else {
+          levelSel.classList.remove('level-selector--hidden');
+          nameInput.value = state.name;
+          nameInput.placeholder = state.name;
+        }
+      });
+    });
+
+    // Niveau de l'IA
+    row.querySelectorAll('.level-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        row.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.level = btn.dataset.level;
+      });
+    });
+
     container.appendChild(row);
   }
-
-  // Délégation d'événements pour les boutons de niveau
-  container.addEventListener('click', (e) => {
-    const btn = e.target.closest('.level-btn');
-    if (!btn) return;
-    const ai = btn.dataset.ai;
-    container.querySelectorAll(`.level-btn[data-ai="${ai}"]`).forEach(b =>
-      b.classList.toggle('active', b === btn)
-    );
-    levels[parseInt(ai)] = btn.dataset.level;
-  });
 }
 
 /* ================================================================== */
@@ -192,14 +232,6 @@ function _startGame(config) {
   document.addEventListener('game:gameOver', () => timer.pause(), { once: true });
 
   engine.newGame(config);
-
-  // Persister le timer dans la sauvegarde après chaque coup
-  document.addEventListener('game:moveValid', () => {
-    if (timer && SaveManager.hasSave()) {
-      const save = SaveManager.load();
-      if (save) { save.elapsed = timer.elapsed; SaveManager.save(save); }
-    }
-  });
 }
 
 function _resumeGame() {
