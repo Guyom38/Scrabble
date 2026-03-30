@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c \"with open\\(''C:/Users/009728/Desktop/Scrabble/data/dico.txt'',''rb''\\) as f: data=f.read\\(200\\); print\\(repr\\(data\\)\\)\")",
+      "Bash(python:*)",
+      "Bash(find C:/Users/009728/Desktop/Scrabble -name *.png -o -name *.jpg -o -name *.webp)",
+      "WebSearch",
+      "WebFetch(domain:colorswall.com)",
+      "WebFetch(domain:scrabble-word.com)",
+      "WebFetch(domain:en.wikipedia.org)",
+      "WebFetch(domain:www.colourlovers.com)",
+      "WebFetch(domain:www.color-hex.com)",
+      "WebFetch(domain:htmlcolorcodes.com)",
+      "WebFetch(domain:www.colorhexa.com)"
+    ]
+  }
+}

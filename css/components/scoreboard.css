@@ -1,0 +1,192 @@
+/* ============================================================
+   SCOREBOARD — Tableau des scores multi-joueurs
+   ============================================================ */
+
+.scoreboard {
+  background: linear-gradient(160deg, rgba(30,12,0,0.93), rgba(42,18,0,0.93));
+  border: 1px solid #8B5e30;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,0.4),
+    0 6px 20px rgba(0,0,0,0.6),
+    inset 0 1px 0 rgba(255,180,80,0.08);
+  backdrop-filter: blur(4px);
+}
+
+.scoreboard__header {
+  padding: var(--gap-sm) var(--gap-md);
+  background: var(--ui-surface-2);
+  border-bottom: 1px solid var(--ui-border);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.scoreboard__list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- Entrée joueur ---------- */
+.score-entry {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-sm);
+  padding: 10px var(--gap-md);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  transition: background var(--transition-fast);
+  position: relative;
+  animation: turnIndicatorSlide 300ms ease;
+}
+
+.score-entry:last-child {
+  border-bottom: none;
+}
+
+/* Tour actif */
+.score-entry--active {
+  background: rgba(212,160,23,0.08);
+}
+
+.score-entry--active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--accent-gold);
+  border-radius: 0 2px 2px 0;
+}
+
+/* ---------- Couleur joueur ---------- */
+.score-entry__color {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 6px currentColor;
+}
+
+/* ---------- Infos joueur ---------- */
+.score-entry__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.score-entry__name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.score-entry--active .score-entry__name {
+  color: var(--accent-gold-light);
+}
+
+.score-entry__badge {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+/* ---------- Score ---------- */
+.score-entry__score {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+  min-width: 40px;
+  text-align: right;
+}
+
+.score-entry--active .score-entry__score {
+  color: var(--accent-gold-light);
+  text-shadow: 0 0 12px var(--accent-gold-glow);
+}
+
+/* Animation +score */
+.score-entry__delta {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--accent-green);
+  position: absolute;
+  right: var(--gap-md);
+  top: 4px;
+  animation: scoreFloat 900ms ease forwards;
+  pointer-events: none;
+}
+
+/* ---------- Indicateur IA en train de penser ---------- */
+.score-entry__thinking {
+  display: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--ui-border);
+  border-top-color: var(--accent-gold);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+.score-entry--thinking .score-entry__thinking {
+  display: block;
+}
+
+/* ---------- Rack de l'IA (tuiles face cachée) ---------- */
+.score-entry__rack {
+  display: flex;
+  gap: 2px;
+  margin-top: 4px;
+}
+
+.score-entry__rack-tile {
+  width: 10px;
+  height: 13px;
+  background: linear-gradient(145deg, #d4c8a0, #b8a880);
+  border-radius: 1px;
+  border: 1px solid rgba(0,0,0,0.2);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+/* ---------- Panneau sac de lettres ---------- */
+.bag-panel {
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-lg);
+  padding: var(--gap-sm) var(--gap-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: var(--shadow-sm);
+}
+
+.bag-panel__label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+
+.bag-panel__count {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--accent-gold-light);
+  line-height: 1;
+}
+
+.bag-panel__icon {
+  font-size: 1.4rem;
+  opacity: 0.7;
+}

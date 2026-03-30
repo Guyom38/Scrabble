@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="description" content="Scrabble en HTML5 — jouez contre une IA à 3 niveaux de difficulté">
+  <title>Scrabble</title>
+
+  <!-- Polices -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/animations.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components/splash.css">
+  <link rel="stylesheet" href="css/components/board.css">
+  <link rel="stylesheet" href="css/components/tile.css">
+  <link rel="stylesheet" href="css/components/rack.css">
+  <link rel="stylesheet" href="css/components/scoreboard.css">
+  <link rel="stylesheet" href="css/components/timer.css">
+  <link rel="stylesheet" href="css/components/modal.css">
+</head>
+<body>
+
+<!-- ================================================================ -->
+<!-- ÉCRAN 0 : SPLASH SCREEN                                           -->
+<!-- ================================================================ -->
+<section id="screen-splash" role="status" aria-live="polite">
+  <div class="splash-logo">
+    <div class="splash-logo__tiles" aria-hidden="true"></div>
+    <p class="splash-logo__subtitle">Le jeu de lettres</p>
+  </div>
+  <div class="splash-loading">
+    <p class="splash-loading__text">Initialisation…</p>
+    <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div class="progress-bar__fill" id="progress-fill"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ÉCRAN 1 : MENU PRINCIPAL                                          -->
+<!-- ================================================================ -->
+<section id="screen-menu" class="screen" role="main">
+  <div class="menu-container anim-fade-in-up">
+    <div class="menu-logo">
+      <h1 class="menu-logo__title">SCRABBLE</h1>
+      <p class="menu-logo__subtitle">Édition française</p>
+    </div>
+
+    <nav class="menu-buttons" aria-label="Menu principal">
+      <button id="btn-new-game" class="btn btn--primary" aria-label="Démarrer une nouvelle partie">
+        ✦ Nouvelle Partie
+      </button>
+      <button id="btn-continue" class="btn btn--secondary" style="display:none" aria-label="Reprendre la partie sauvegardée">
+        ▶ Continuer
+        <small class="save-date text-muted" style="font-size:0.7em;display:block;text-transform:none;letter-spacing:0"></small>
+      </button>
+      <button id="btn-rules" class="btn btn--ghost" aria-label="Lire les règles du jeu">
+        📖 Règles du jeu
+      </button>
+    </nav>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ÉCRAN 2 : CONFIGURATION                                           -->
+<!-- ================================================================ -->
+<section id="screen-config" class="screen" role="main">
+  <div class="config-container anim-fade-in-up">
+    <div class="config-header">
+      <h2>Nouvelle Partie</h2>
+      <p class="text-muted text-small" style="margin-top:8px">Configurez votre partie</p>
+    </div>
+
+    <!-- Nom du joueur -->
+    <div class="config-section">
+      <label class="config-section__label" for="player-name">Votre nom</label>
+      <input
+        type="text" id="player-name"
+        placeholder="Joueur"
+        maxlength="20"
+        autocomplete="off"
+        aria-label="Votre nom de joueur"
+      >
+    </div>
+
+    <!-- Nombre d'adversaires -->
+    <div class="config-section">
+      <div class="config-section__label">Adversaires IA</div>
+      <div class="ai-count-selector" role="group" aria-label="Nombre d'adversaires">
+        <button class="ai-count-btn" data-count="1" aria-pressed="true">1</button>
+        <button class="ai-count-btn" data-count="2" aria-pressed="false">2</button>
+        <button class="ai-count-btn" data-count="3" aria-pressed="false">3</button>
+      </div>
+    </div>
+
+    <!-- Niveaux des IA -->
+    <div class="config-section">
+      <div class="config-section__label">Niveau de chaque IA</div>
+      <div id="ai-configs" class="ai-configs"></div>
+    </div>
+
+    <div class="config-footer">
+      <button id="btn-back-to-menu" class="btn btn--ghost">← Retour</button>
+      <button id="btn-start-game"   class="btn btn--primary">Jouer ✦</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ÉCRAN 3 : JEU                                                     -->
+<!-- ================================================================ -->
+<section id="screen-game" class="screen" role="main">
+
+  <!-- Overlay IA -->
+  <div class="ai-thinking-overlay" style="display:none;position:fixed;inset:0;z-index:150;pointer-events:none;align-items:flex-end;justify-content:center;padding-bottom:24px;">
+    <div style="display:flex;align-items:center;gap:10px;background:rgba(15,6,0,0.94);border:1px solid #8B5e30;border-radius:999px;padding:9px 22px;box-shadow:0 4px 24px rgba(0,0,0,0.7);">
+      <div class="anim-spin" style="width:14px;height:14px;border:2px solid #4a2808;border-top-color:var(--accent-gold);border-radius:50%;flex-shrink:0;"></div>
+      <span style="font-size:0.8rem;color:var(--text-secondary);letter-spacing:0.05em;font-weight:700;text-transform:uppercase;">L'IA réfléchit…</span>
+    </div>
+  </div>
+
+  <div class="game-layout">
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!--  PANNEAU GAUCHE                                        -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <aside class="game-sidebar" aria-label="Panneau de jeu">
+
+      <!-- En-tête : logo + status -->
+      <div class="sidebar__head">
+        <div class="sidebar__logo">SCRABBLE</div>
+        <div class="turn-indicator" id="turn-indicator">
+          <div class="turn-indicator__dot"></div>
+          <span id="turn-text">—</span>
+        </div>
+      </div>
+
+      <!-- Scores -->
+      <section class="sidebar__section">
+        <div class="sidebar__section-title">🏆 Scores</div>
+        <div class="scoreboard">
+          <ul class="scoreboard__list" id="score-list" aria-live="polite"></ul>
+        </div>
+      </section>
+
+      <!-- Stats : pioche + chrono -->
+      <div class="sidebar__stats">
+        <div class="sidebar__stat">
+          <div class="sidebar__stat-icon">🎲</div>
+          <div class="sidebar__stat-body">
+            <div class="sidebar__stat-label">Pioche</div>
+            <div class="sidebar__stat-value" id="bag-count">102</div>
+          </div>
+        </div>
+        <div class="sidebar__stat">
+          <div class="sidebar__stat-icon">⏱</div>
+          <div class="sidebar__stat-body">
+            <div class="sidebar__stat-label">Temps</div>
+            <div class="sidebar__stat-value" id="timer-display">00:00</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chevalet -->
+      <section class="sidebar__section">
+        <div class="sidebar__section-title">🀄 Vos tuiles</div>
+        <div class="sidebar__rack-wrap">
+          <div class="rack" id="player-rack" role="group" aria-label="Vos tuiles"></div>
+        </div>
+      </section>
+
+      <!-- Actions -->
+      <section class="sidebar__section sidebar__actions">
+        <button id="btn-validate" class="btn btn--success  rack-controls btn--action-main">✓ Valider le mot</button>
+        <div class="rack-controls sidebar__actions-row">
+          <button id="btn-recall"   class="btn btn--secondary">↩ Rappeler</button>
+          <button id="btn-shuffle"  class="btn btn--secondary">⇄ Mélanger</button>
+        </div>
+        <div class="rack-controls sidebar__actions-row">
+          <button id="btn-exchange" class="btn btn--secondary">⇌ Échanger</button>
+          <button id="btn-pass"     class="btn btn--secondary">⏭ Passer</button>
+        </div>
+      </section>
+
+      <!-- Menu -->
+      <button id="btn-game-menu" class="btn btn--ghost sidebar__menu-btn">☰ Menu</button>
+
+    </aside>
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!--  PLATEAU (droite, occupe tout l'espace)               -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <main class="game-main" aria-label="Plateau de jeu">
+      <div class="board-frame" role="grid" aria-label="Plateau Scrabble 15×15">
+        <div class="board" id="game-board"></div>
+      </div>
+    </main>
+
+  </div><!-- /game-layout -->
+</section>
+
+
+<!-- ================================================================ -->
+<!-- MODALES                                                            -->
+<!-- ================================================================ -->
+
+<!-- Toast container (injecté par JS, mais défini ici pour l'accessibilité) -->
+<div id="toast-container" class="toast-container" aria-live="assertive" aria-atomic="false"></div>
+
+<!-- ── Modale : Joker ── -->
+<div id="modal-joker" class="modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="joker-title" aria-hidden="true">
+  <div class="modal modal--sm">
+    <div class="modal__header">
+      <h2 class="modal__title" id="joker-title">Choisir la lettre du Joker</h2>
+      <button class="modal__close" aria-label="Fermer">✕</button>
+    </div>
+    <div class="modal__body">
+      <div id="joker-keyboard" class="joker-keyboard"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modale : Confirmation de passe ── -->
+<div id="modal-confirm-pass" class="modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="pass-title" aria-hidden="true">
+  <div class="modal modal--sm">
+    <div class="modal__header">
+      <h2 class="modal__title" id="pass-title">Passer votre tour ?</h2>
+      <button class="modal__close" aria-label="Fermer">✕</button>
+    </div>
+    <div class="modal__body">
+      <p>Êtes-vous sûr de vouloir passer votre tour sans jouer ?</p>
+      <p class="text-muted text-small" style="margin-top:8px">6 passes consécutives totales terminent la partie.</p>
+    </div>
+    <div class="modal__footer">
+      <button id="confirm-pass-no"  class="btn btn--ghost">Annuler</button>
+      <button id="confirm-pass-yes" class="btn btn--danger">Passer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modale : Échange de tuiles ── -->
+<div id="modal-exchange" class="modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="exchange-title" aria-hidden="true">
+  <div class="modal">
+    <div class="modal__header">
+      <h2 class="modal__title" id="exchange-title">Échanger des tuiles</h2>
+      <button class="modal__close" aria-label="Fermer">✕</button>
+    </div>
+    <div class="modal__body">
+      <p class="exchange-modal__info">Cliquez sur les tuiles à échanger, puis confirmez.</p>
+      <div id="exchange-tiles" class="exchange-modal__tiles"></div>
+    </div>
+    <div class="modal__footer">
+      <button class="btn btn--ghost modal__close-btn" onclick="document.querySelector('#modal-exchange .modal__close').click()">Annuler</button>
+      <button id="btn-confirm-exchange" class="btn btn--primary" disabled>Échanger</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modale : Menu de jeu ── -->
+<div id="modal-game-menu" class="modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="game-menu-title" aria-hidden="true">
+  <div class="modal modal--sm">
+    <div class="modal__header">
+      <h2 class="modal__title" id="game-menu-title">Menu</h2>
+      <button class="modal__close" aria-label="Fermer">✕</button>
+    </div>
+    <div class="modal__body" style="display:flex;flex-direction:column;gap:12px;padding-top:16px">
+      <button id="btn-new-game-from-modal" class="btn btn--secondary w-full">✦ Nouvelle partie</button>
+      <button id="btn-quit-game"           class="btn btn--danger   w-full">✕ Quitter la partie</button>
+    </div>
+    <div class="modal__footer">
+      <button class="modal__close btn btn--ghost">Reprendre</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modale : Fin de partie ── -->
+<div id="modal-end-game" class="modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="end-game-title" aria-hidden="true">
+  <div class="modal">
+    <div class="modal__header">
+      <h2 class="modal__title" id="end-game-title">🏆 Fin de la partie</h2>
+    </div>
+    <div class="modal__body">
+      <div id="end-game-results" class="end-game__results"></div>
+    </div>
+    <div class="modal__footer">
+      <button id="btn-play-again"   class="btn btn--primary">Rejouer</button>
+      <button id="btn-back-menu-end" class="btn btn--ghost">Menu</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modale : Règles du jeu ── -->
+<div id="modal-rules" class="modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="rules-title" aria-hidden="true">
+  <div class="modal modal--lg">
+    <div class="modal__header">
+      <h2 class="modal__title" id="rules-title">Règles du Scrabble</h2>
+      <button class="modal__close" aria-label="Fermer">✕</button>
+    </div>
+    <div class="modal__body" style="font-size:0.9rem;line-height:1.7">
+      <p><strong style="color:var(--accent-gold-light)">Objectif</strong> — Marquer un maximum de points en formant des mots sur le plateau.</p>
+      <br>
+      <p><strong style="color:var(--accent-gold-light)">Tour de jeu</strong></p>
+      <ul style="margin-left:20px;list-style:disc">
+        <li>Placez une ou plusieurs lettres de votre chevalet pour former un mot.</li>
+        <li>Le premier mot doit passer par la case centrale ★.</li>
+        <li>Chaque mot suivant doit s'appuyer sur une lettre déjà posée.</li>
+        <li>Toutes les lettres posées doivent former des mots valides dans toutes les directions.</li>
+      </ul>
+      <br>
+      <p><strong style="color:var(--accent-gold-light)">Cases bonus</strong></p>
+      <ul style="margin-left:20px;list-style:disc">
+        <li><span style="color:var(--bonus-tw-bg)">■</span> <strong>MOT×3</strong> — triple la valeur du mot entier.</li>
+        <li><span style="color:var(--bonus-dw-bg)">■</span> <strong>MOT×2</strong> — double la valeur du mot entier.</li>
+        <li><span style="color:var(--bonus-tl-bg)">■</span> <strong>LET×3</strong> — triple la valeur de la lettre posée.</li>
+        <li><span style="color:var(--bonus-dl-bg)">■</span> <strong>LET×2</strong> — double la valeur de la lettre posée.</li>
+      </ul>
+      <p style="margin-top:8px">Les bonus ne s'appliquent <em>que lors du premier placement</em> sur la case.</p>
+      <br>
+      <p><strong style="color:var(--accent-gold-light)">Scrabble</strong> — Jouer les 7 tuiles en un seul coup rapporte <strong>+50 points</strong> de bonus !</p>
+      <br>
+      <p><strong style="color:var(--accent-gold-light)">Fin de partie</strong></p>
+      <ul style="margin-left:20px;list-style:disc">
+        <li>Quand le sac est vide et qu'un joueur n'a plus de tuiles.</li>
+        <li>Quand 6 passes consécutives sont effectuées (tous joueurs confondus).</li>
+        <li>Les joueurs avec des tuiles restantes perdent leur valeur. Le joueur qui a fini les gagne.</li>
+      </ul>
+      <br>
+      <p><strong style="color:var(--accent-gold-light)">Joker</strong> — La tuile <strong>?</strong> peut représenter n'importe quelle lettre mais vaut 0 point.</p>
+    </div>
+    <div class="modal__footer">
+      <button class="modal__close btn btn--primary">Compris !</button>
+    </div>
+  </div>
+</div>
+
+<!-- Application -->
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

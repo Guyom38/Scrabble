@@ -1,0 +1,65 @@
+/* ============================================================
+   TIMER — Chronomètre
+   ============================================================ */
+
+.timer {
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-lg);
+  padding: var(--gap-sm) var(--gap-md);
+  display: flex;
+  align-items: center;
+  gap: var(--gap-sm);
+  box-shadow: var(--shadow-sm);
+}
+
+.timer__icon {
+  font-size: 1rem;
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.timer__label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.timer__display {
+  font-family: 'Courier New', 'Lucida Console', monospace;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--accent-gold-light);
+  letter-spacing: 0.08em;
+  flex: 1;
+  text-align: right;
+}
+
+/* Chrono critique (rouge si > seuil) */
+.timer--warning .timer__display {
+  color: var(--accent-orange);
+}
+
+.timer--danger .timer__display {
+  color: var(--accent-red);
+  animation: progressPulse 1s ease infinite;
+}
+
+/* Chrono compact (dans la topbar) */
+.timer--compact {
+  padding: 4px 10px;
+  gap: var(--gap-xs);
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.timer--compact .timer__display {
+  font-size: 0.95rem;
+}
+
+.timer--compact .timer__label {
+  display: none;
+}

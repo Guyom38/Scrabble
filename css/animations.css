@@ -1,0 +1,190 @@
+/* ============================================================
+   ANIMATIONS — Toutes les @keyframes et classes d'animation
+   ============================================================ */
+
+/* ---------- Fondus ---------- */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.85); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ---------- Tuiles ---------- */
+@keyframes tileDrop {
+  0%   { opacity: 0; transform: translateY(-30px) scale(0.8); }
+  60%  { transform: translateY(4px) scale(1.04); }
+  80%  { transform: translateY(-2px) scale(0.98); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes tileLock {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(1.12); }
+  60%  { transform: scale(0.95); }
+  100% { transform: scale(1); filter: brightness(0.92); }
+}
+
+@keyframes tileInvalidShake {
+  0%,100% { transform: translateX(0); }
+  15%     { transform: translateX(-8px) rotate(-3deg); }
+  30%     { transform: translateX(8px) rotate(3deg); }
+  45%     { transform: translateX(-6px); }
+  60%     { transform: translateX(6px); }
+  75%     { transform: translateX(-3px); }
+}
+
+@keyframes tilePickup {
+  0%   { transform: scale(1); box-shadow: var(--shadow-tile); }
+  100% { transform: scale(1.15) rotate(2deg); box-shadow: var(--shadow-tile-drag); }
+}
+
+@keyframes tileToRack {
+  0%   { transform: scale(1.1); }
+  50%  { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+
+/* ---------- Score flottant ---------- */
+@keyframes scoreFloat {
+  0%   { opacity: 1; transform: translateY(0) scale(1); }
+  20%  { opacity: 1; transform: translateY(-5px) scale(1.15); }
+  80%  { opacity: 0.8; transform: translateY(-40px) scale(1); }
+  100% { opacity: 0; transform: translateY(-60px) scale(0.8); }
+}
+
+/* ---------- Bonus Scrabble ---------- */
+@keyframes scrabbleFlash {
+  0%,100% { filter: brightness(1); }
+  25%     { filter: brightness(1.5) saturate(1.5); }
+  50%     { filter: brightness(1); }
+  75%     { filter: brightness(1.4) saturate(1.3); }
+}
+
+@keyframes scrabbleBanner {
+  0%   { opacity: 0; transform: scale(0.5) rotate(-8deg); }
+  50%  { transform: scale(1.08) rotate(2deg); }
+  75%  { transform: scale(0.97) rotate(-1deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+
+@keyframes confettiFall {
+  0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+/* ---------- Splash screen ---------- */
+@keyframes splashLogoReveal {
+  0%   { opacity: 0; transform: scale(0.6) translateY(30px); filter: blur(8px); }
+  60%  { opacity: 1; transform: scale(1.04) translateY(-4px); filter: blur(0); }
+  80%  { transform: scale(0.98); }
+  100% { transform: scale(1) translateY(0); }
+}
+
+@keyframes splashLetterFall {
+  0%   { opacity: 0; transform: translateY(-80px) rotateX(90deg); }
+  60%  { transform: translateY(8px) rotateX(-10deg); }
+  80%  { transform: translateY(-4px) rotateX(4deg); }
+  100% { opacity: 1; transform: translateY(0) rotateX(0); }
+}
+
+@keyframes progressPulse {
+  0%,100% { opacity: 1; }
+  50%     { opacity: 0.6; }
+}
+
+/* ---------- Modal ---------- */
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.92) translateY(16px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes modalOut {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.94) translateY(8px); }
+}
+
+@keyframes overlayIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ---------- Toast ---------- */
+@keyframes toastIn {
+  from { opacity: 0; transform: translate(-50%, -24px) scale(0.9); }
+  to   { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+
+@keyframes toastOut {
+  from { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  to   { opacity: 0; transform: translate(-50%, -16px) scale(0.95); }
+}
+
+/* ---------- Tour suivant ---------- */
+@keyframes turnIndicatorSlide {
+  from { opacity: 0; transform: translateX(-16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ---------- Pulsation active ---------- */
+@keyframes pulseGlow {
+  0%,100% { box-shadow: 0 0 0 0 var(--accent-gold-glow); }
+  50%     { box-shadow: 0 0 0 8px transparent; }
+}
+
+/* ---------- Rotate (thinking) ---------- */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ---------- Bounce ---------- */
+@keyframes bounce {
+  0%,100% { transform: translateY(0); }
+  50%     { transform: translateY(-8px); }
+}
+
+/* ============================================================
+   CLASSES UTILITAIRES D'ANIMATION
+   ============================================================ */
+
+.anim-fade-in        { animation: fadeIn        var(--transition-normal) both; }
+.anim-fade-in-up     { animation: fadeInUp      var(--transition-normal) both; }
+.anim-fade-in-scale  { animation: fadeInScale   var(--transition-normal) both; }
+.anim-tile-drop      { animation: tileDrop      350ms cubic-bezier(0.34,1.56,0.64,1) both; }
+.anim-tile-lock      { animation: tileLock      400ms ease both; }
+.anim-tile-shake     { animation: tileInvalidShake 500ms ease; }
+.anim-score-float    { animation: scoreFloat    900ms ease forwards; }
+.anim-modal-in       { animation: modalIn       300ms cubic-bezier(0.34,1.2,0.64,1) both; }
+.anim-modal-out      { animation: modalOut      200ms ease forwards; }
+.anim-spin           { animation: spin          1s linear infinite; }
+.anim-bounce         { animation: bounce        1s ease infinite; }
+.anim-pulse-glow     { animation: pulseGlow     2s ease infinite; }
+.anim-scrabble       { animation: scrabbleFlash 600ms ease; }
+
+/* Décalages pour les animations en cascade */
+.anim-delay-1 { animation-delay: 100ms; }
+.anim-delay-2 { animation-delay: 200ms; }
+.anim-delay-3 { animation-delay: 300ms; }
+.anim-delay-4 { animation-delay: 400ms; }
+.anim-delay-5 { animation-delay: 500ms; }
+.anim-delay-6 { animation-delay: 600ms; }
+.anim-delay-7 { animation-delay: 700ms; }

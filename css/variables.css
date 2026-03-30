@@ -1,0 +1,168 @@
+/* ============================================================
+   DESIGN TOKENS — Scrabble HTML5
+   Source unique pour toutes les valeurs de design
+   ============================================================ */
+
+:root {
+
+  /* === PALETTE BOIS (fond de table) === */
+  --wood-darkest:   #1a0a00;
+  --wood-dark:      #3d1800;
+  --wood-medium:    #6b3a1f;
+  --wood-light:     #a0622a;
+  --wood-lighter:   #c8854e;
+  --wood-table-1:   #7a4e2d;
+  --wood-table-2:   #8b5e3c;
+  --wood-table-3:   #a06830;
+
+  /* === PLATEAU DE JEU === */
+  --board-frame-bg:     #2d1200;
+  --board-frame-border: #1a0900;
+  --board-surface:      #2e5018;
+  --board-grid:         #2e5018;
+  --cell-plain:         #5a8040;
+  --cell-plain-dark:    #4e7035;
+
+  /* === CASES BONUS (couleurs officielles Scrabble) === */
+  --bonus-tw-bg:    #c41e3a;   /* rouge foncé  — Mot ×3  */
+  --bonus-tw-text:  #fff;
+  --bonus-dw-bg:    #e8909a;   /* rose clair   — Mot ×2  */
+  --bonus-dw-text:  #3a0010;
+  --bonus-tl-bg:    #1e4a9e;   /* bleu marine  — Let. ×3 */
+  --bonus-tl-text:  #d0e4ff;
+  --bonus-dl-bg:    #6aaed8;   /* bleu ciel    — Let. ×2 */
+  --bonus-dl-text:  #001830;
+  --bonus-start-bg: #e8909a;   /* même que DW + étoile   */
+  --bonus-start-text:#3a0010;
+
+  /* === TUILES === */
+  --tile-bg:        #f4e6c0;
+  --tile-bg-light:  #fdf5e0;
+  --tile-bg-hover:  #fff8e8;
+  --tile-bg-temp:   #f4e6c0;
+  --tile-border-top:    rgba(255,255,255,0.75);
+  --tile-border-left:   rgba(255,255,255,0.55);
+  --tile-border-right:  rgba(0,0,0,0.25);
+  --tile-border-bottom: rgba(0,0,0,0.4);
+  --tile-text:      #1a0800;
+  --tile-value:     #6b3010;
+  --tile-shadow:    rgba(0,0,0,0.55);
+  --tile-placed-overlay: rgba(0,0,0,0.07);
+
+  /* === SURFACES UI === */
+  --ui-bg:          #1e0e05;
+  --ui-surface:     #2d1600;
+  --ui-surface-2:   #3a1e08;
+  --ui-surface-3:   #4a2810;
+  --ui-border:      #6b3a1f;
+  --ui-border-light:#9a6030;
+
+  /* === TEXTES === */
+  --text-primary:   #f5e6c8;
+  --text-secondary: #c8a060;
+  --text-muted:     #8a6040;
+  --text-on-dark:   #f5e6c8;
+  --text-on-bonus:  #ffffff;
+
+  /* === ACCENTS === */
+  --accent-gold:         #d4a017;
+  --accent-gold-light:   #f0c040;
+  --accent-gold-glow:    rgba(212,160,23,0.4);
+  --accent-green:        #27ae60;
+  --accent-green-dark:   #1e8449;
+  --accent-red:          #e74c3c;
+  --accent-red-dark:     #c0392b;
+  --accent-blue:         #2980b9;
+  --accent-orange:       #e67e22;
+
+  /* === JOUEURS (couleurs d'accent) === */
+  --player-1: #f0c040;   /* humain — or */
+  --player-2: #82e0aa;   /* IA 1 — vert */
+  --player-3: #85c1e9;   /* IA 2 — bleu */
+  --player-4: #f1948a;   /* IA 3 — rose */
+
+  /* === ESPACEMENTS === */
+  --gap-xs:   4px;
+  --gap-sm:   8px;
+  --gap-md:   16px;
+  --gap-lg:   24px;
+  --gap-xl:   40px;
+  --gap-2xl:  64px;
+
+  /* === BORDURES === */
+  --radius-xs:   2px;
+  --radius-sm:   4px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-xl:   20px;
+  --radius-2xl:  32px;
+  --radius-full: 9999px;
+
+  /* === OMBRES === */
+  --shadow-sm:   0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md:   0 4px 12px rgba(0,0,0,0.5);
+  --shadow-lg:   0 8px 24px rgba(0,0,0,0.6);
+  --shadow-xl:   0 16px 48px rgba(0,0,0,0.7);
+  --shadow-inset:inset 0 2px 8px rgba(0,0,0,0.5);
+  --shadow-tile: 1px 3px 5px rgba(0,0,0,0.55),
+                 inset 0 1px 0 rgba(255,255,255,0.65),
+                 inset -1px -1px 0 rgba(0,0,0,0.2);
+  --shadow-tile-drag: 4px 8px 16px rgba(0,0,0,0.7),
+                      inset 0 1px 0 rgba(255,255,255,0.65);
+  --shadow-board-frame: 0 20px 60px rgba(0,0,0,0.8),
+                        inset 0 1px 0 rgba(255,255,255,0.05);
+
+  /* === TRANSITIONS === */
+  --transition-fast:   150ms cubic-bezier(0.4,0,0.2,1);
+  --transition-normal: 300ms cubic-bezier(0.4,0,0.2,1);
+  --transition-slow:   500ms cubic-bezier(0.4,0,0.2,1);
+  --transition-spring: 400ms cubic-bezier(0.34,1.56,0.64,1);
+
+  /* === Z-INDEX === */
+  --z-base:      1;
+  --z-board:     2;
+  --z-tile:      10;
+  --z-tile-temp: 20;
+  --z-dragging:  100;
+  --z-ui-panel:  50;
+  --z-modal-bg:  200;
+  --z-modal:     300;
+  --z-toast:     400;
+  --z-splash:    500;
+
+  /* === TAILLES PLATEAU === */
+  --cell-size:   38px;
+  --cell-gap:    2px;
+  --tile-size:   34px;
+  --tile-font:   19px;
+  --tile-sub:    8px;
+
+  /* === TAILLES CHEVALET === */
+  --rack-slot-size: 40px;
+  --rack-gap:       6px;
+}
+
+/* ---------- BREAKPOINTS ---------- */
+@media (max-width: 750px) {
+  :root {
+    --cell-size:   26px;
+    --cell-gap:    1px;
+    --tile-size:   23px;
+    --tile-font:   13px;
+    --tile-sub:    6px;
+    --rack-slot-size: 32px;
+    --rack-gap:    4px;
+  }
+}
+
+@media (max-width: 450px) {
+  :root {
+    --cell-size:   20px;
+    --cell-gap:    1px;
+    --tile-size:   17px;
+    --tile-font:   10px;
+    --tile-sub:    5px;
+    --rack-slot-size: 26px;
+    --rack-gap:    3px;
+  }
+}

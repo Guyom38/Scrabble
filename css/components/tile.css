@@ -1,0 +1,216 @@
+/* ============================================================
+   TILE — Tuiles de Scrabble en relief 3D façon Nintendo
+   ============================================================ */
+
+.tile {
+  width: var(--tile-size);
+  height: var(--tile-size);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  font-size: var(--tile-font);
+  font-weight: 900;
+  color: #1a0800;
+  cursor: grab;
+  position: relative;
+  z-index: var(--z-tile);
+  user-select: none;
+
+  /* Relief 3D — face principale */
+  background:
+    linear-gradient(
+      160deg,
+      #fffbe8 0%,
+      #f7e9c0 30%,
+      #e8d49a 65%,
+      #d4b870 100%
+    );
+
+  /* Ombre portée volumétrique */
+  box-shadow:
+    0 4px 0 #8B5E20,          /* côté bas épais (effet brique) */
+    0 5px 8px rgba(0,0,0,0.55),
+    inset 0 1px 0 rgba(255,255,255,0.9),
+    inset 1px 0 0 rgba(255,255,255,0.5),
+    inset -1px 0 0 rgba(0,0,0,0.12),
+    inset 0 -1px 0 rgba(0,0,0,0.18);
+
+  border: 1px solid #a07030;
+  border-bottom-color: #7a4a10;
+
+  transition:
+    transform     var(--transition-fast),
+    box-shadow    var(--transition-fast),
+    filter        var(--transition-fast);
+}
+
+/* Reflet supérieur brillant */
+.tile::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 45%;
+  border-radius: 4px 4px 50% 50%;
+  background: linear-gradient(
+    180deg,
+    rgba(255,255,255,0.7) 0%,
+    rgba(255,255,255,0.15) 60%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Grain de bois très subtil */
+.tile::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 4px;
+  background: repeating-linear-gradient(
+    108deg,
+    transparent 0px,
+    transparent 5px,
+    rgba(0,0,0,0.018) 5px,
+    rgba(0,0,0,0.018) 6px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ---------- Hover ---------- */
+.tile:hover {
+  transform: translateY(-3px) scale(1.07);
+  box-shadow:
+    0 7px 0 #8B5E20,
+    0 10px 18px rgba(0,0,0,0.65),
+    inset 0 1px 0 rgba(255,255,255,0.95),
+    inset 1px 0 0 rgba(255,255,255,0.55);
+  filter: brightness(1.05);
+  z-index: var(--z-tile-temp);
+}
+
+.tile:active {
+  cursor: grabbing;
+  transform: translateY(2px);
+  box-shadow:
+    0 2px 0 #8B5E20,
+    0 3px 6px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.7);
+}
+
+/* ---------- Tuile en cours de drag ---------- */
+.tile--dragging {
+  cursor: grabbing;
+  transform: scale(1.18) rotate(3deg);
+  box-shadow:
+    0 12px 28px rgba(0,0,0,0.75),
+    0 0 0 2px rgba(212,160,23,0.8),
+    inset 0 1px 0 rgba(255,255,255,0.9);
+  z-index: var(--z-dragging);
+  opacity: 0.9;
+  filter: brightness(1.08);
+}
+
+/* Tuile temporairement posée sur le plateau */
+.tile--temp {
+  outline: 2.5px solid #27ae60;
+  outline-offset: 2px;
+  box-shadow:
+    0 3px 0 #8B5E20,
+    0 5px 12px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.85),
+    0 0 10px rgba(39,174,96,0.35);
+  animation: tileDrop 350ms cubic-bezier(0.34,1.56,0.64,1) both;
+}
+
+/* Tuile validée — aplatie sur le plateau */
+.tile--placed {
+  cursor: default;
+  transform: translateY(0) !important;
+  box-shadow:
+    0 1px 0 #7a4a10,
+    0 2px 4px rgba(0,0,0,0.45),
+    inset 0 1px 0 rgba(255,255,255,0.5);
+  filter: brightness(0.88) saturate(0.85);
+  border-color: #7a4a10;
+  animation: tileLock 400ms ease both;
+}
+
+.tile--placed:hover {
+  transform: none;
+  filter: brightness(0.88) saturate(0.85);
+  box-shadow:
+    0 1px 0 #7a4a10,
+    0 2px 4px rgba(0,0,0,0.45),
+    inset 0 1px 0 rgba(255,255,255,0.5);
+  cursor: default;
+}
+
+/* Joker */
+.tile--blank {
+  background: linear-gradient(160deg, #f0ece0, #ddd5b8, #c8bc98);
+  color: #333;
+  font-style: italic;
+  border-color: #888060;
+  box-shadow:
+    0 4px 0 #666040,
+    0 5px 8px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.8);
+}
+
+/* Sélectionnée au click */
+.tile--selected {
+  outline: 3px solid var(--accent-gold-light);
+  outline-offset: 2px;
+  transform: translateY(-5px) scale(1.1);
+  box-shadow:
+    0 8px 0 #8B5E20,
+    0 12px 24px rgba(0,0,0,0.7),
+    0 0 18px rgba(240,192,64,0.55),
+    inset 0 1px 0 rgba(255,255,255,0.95);
+  z-index: var(--z-tile-temp);
+  filter: brightness(1.1);
+}
+
+/* ---------- Valeur de la tuile ---------- */
+.tile__value {
+  position: absolute;
+  bottom: 2px;
+  right: 3px;
+  font-size: var(--tile-sub);
+  font-weight: 700;
+  font-family: 'Lato', sans-serif;
+  color: #7a4010;
+  line-height: 1;
+  pointer-events: none;
+  z-index: 3;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.5);
+}
+
+/* ---------- Tuiles sur le plateau : taille maximale ---------- */
+.board .tile {
+  width:  calc(var(--cell-size) - 4px);
+  height: calc(var(--cell-size) - 4px);
+  font-size:    calc(var(--cell-size) * 0.44);
+  border-radius: 3px;
+}
+.board .tile .tile__value {
+  font-size: calc(var(--cell-size) * 0.16);
+  bottom: calc(var(--cell-size) * 0.04);
+  right:  calc(var(--cell-size) * 0.06);
+}
+
+/* ---------- Nouvelle tuile arrivante ---------- */
+.tile--arriving {
+  animation: tileDrop 400ms cubic-bezier(0.34,1.56,0.64,1) both;
+}
+
+/* Shake sur coup invalide */
+.tile--shake {
+  animation: tileInvalidShake 500ms ease;
+}
