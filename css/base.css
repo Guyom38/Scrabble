@@ -15,7 +15,7 @@ html {
 }
 
 body {
-  font-family: 'Lato', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: Arial, 'Helvetica Neue', 'Segoe UI', Helvetica, sans-serif;
   background-color: var(--ui-bg);
   color: var(--text-primary);
   min-height: 100vh;
@@ -54,7 +54,7 @@ body {
 
 /* ---------- Typographie ---------- */
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Playfair Display', 'Georgia', 'Times New Roman', serif;
+  font-family: Arial, 'Helvetica Neue', 'Segoe UI', Helvetica, sans-serif;
   font-weight: 700;
   line-height: 1.2;
   color: var(--accent-gold-light);

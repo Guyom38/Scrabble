@@ -37,10 +37,19 @@
 }
 
 @keyframes tileLock {
-  0%   { transform: scale(1); }
-  30%  { transform: scale(1.12); }
-  60%  { transform: scale(0.95); }
-  100% { transform: scale(1); filter: brightness(0.92); }
+  0%   { transform: translateY(0) scale(1.05);
+         filter: brightness(2.2) saturate(1.4);
+         box-shadow: 0 0 0 3px rgba(212,160,23,1), 0 0 22px rgba(212,160,23,0.8), 0 0 48px rgba(212,160,23,0.35); }
+  28%  { transform: translateY(0) scale(1.2);
+         filter: brightness(2.5) saturate(1.6);
+         box-shadow: 0 0 0 5px rgba(212,160,23,1), 0 0 32px rgba(212,160,23,0.9), 0 0 64px rgba(212,160,23,0.4); }
+  55%  { transform: translateY(0) scale(0.97);
+         filter: brightness(1.1);
+         box-shadow: 0 0 0 1px rgba(212,160,23,0.3), 0 0 8px rgba(212,160,23,0.15); }
+  78%  { transform: translateY(0) scale(1.02); filter: brightness(0.93); }
+  100% { transform: translateY(0) scale(1);
+         filter: brightness(0.88) saturate(0.85);
+         box-shadow: 0 1px 0 #7a4a10, 0 2px 4px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.5); }
 }
 
 @keyframes tileInvalidShake {
@@ -69,6 +78,14 @@
   20%  { opacity: 1; transform: translateY(-5px) scale(1.15); }
   80%  { opacity: 0.8; transform: translateY(-40px) scale(1); }
   100% { opacity: 0; transform: translateY(-60px) scale(0.8); }
+}
+
+@keyframes scoreFlash {
+  0%   { transform: scale(1);    color: var(--accent-gold-light); }
+  30%  { transform: scale(1.55); color: #fff;
+         text-shadow: 0 0 20px rgba(212,160,23,1), 0 0 40px rgba(212,160,23,0.6); }
+  65%  { transform: scale(1.25); }
+  100% { transform: scale(1); }
 }
 
 /* ---------- Bonus Scrabble ---------- */

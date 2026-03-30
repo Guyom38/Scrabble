@@ -101,18 +101,34 @@
 
 /* ---------- Score ---------- */
 .score-entry__score {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-size: 1.3rem;
-  font-weight: 700;
+  font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;
+  font-size: 1.6rem;
+  font-weight: 900;
   color: var(--text-primary);
   line-height: 1;
-  min-width: 40px;
+  min-width: 46px;
   text-align: right;
+  transition: color var(--transition-fast);
 }
 
 .score-entry--active .score-entry__score {
   color: var(--accent-gold-light);
-  text-shadow: 0 0 12px var(--accent-gold-glow);
+  text-shadow: 0 0 16px var(--accent-gold-glow);
+  font-size: 1.9rem;
+}
+
+/* Flash quand le score augmente */
+.score-entry__score.score-flash {
+  animation: scoreFlash 600ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* +delta flottant plus visible */
+.score-entry__delta {
+  font-size: 1rem;
+  font-weight: 900;
+  font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;
+  color: #a0f0b0;
+  text-shadow: 0 0 10px rgba(80,240,120,0.7);
 }
 
 /* Animation +score */

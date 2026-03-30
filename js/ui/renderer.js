@@ -19,6 +19,7 @@ export class Renderer {
     // Workspace
     this._workspaceEls       = new Map(); // tileId → HTMLElement
     this._workspacePositions = new Map(); // tileId → {x, y}
+    this._tileSlotIdx        = new Map(); // tileId → slotIndex (0..7)
 
     // Drag en cours
     this._drag = null; // { el, tileId, letter, value, isBlank, clientX, clientY }
@@ -89,6 +90,7 @@ export class Renderer {
       this._els.workspace.innerHTML = '';
       this._workspaceEls.clear();
       this._workspacePositions.clear();
+      this._tileSlotIdx.clear();
       this._drag = null;
       document.body.classList.remove('tile-held');
     }
@@ -158,12 +160,13 @@ export class Renderer {
   }
 
   _onMoveValid({ placements, total, scrabble }) {
-    placements.forEach(p => {
+    placements.forEach((p, idx) => {
       const cell = this._getCell(p.x, p.y);
       const tempEl = cell.querySelector('.tile--temp');
       if (tempEl) {
         tempEl.classList.remove('tile--temp');
         tempEl.classList.add('tile--placed', 'anim-tile-lock');
+        tempEl.style.animationDelay = `${idx * 70}ms`; // vague séquentielle
         tempEl.draggable = false;
         tempEl.removeAttribute('draggable');
       }
@@ -262,7 +265,8 @@ export class Renderer {
     const cellSize = parseInt(getComputedStyle(document.documentElement)
       .getPropertyValue('--cell-size')) || 42;
     const tileSize = cellSize - 2;
-    const margin   = 12;
+    const margin   = 10;
+    const xStep    = 8; // décalage horizontal entre tuiles superposées
 
     // Positions déjà occupées (y compris celles draggées hors workspace)
     const occupied = [...this._workspacePositions.values()];
@@ -270,7 +274,7 @@ export class Renderer {
     const newEls = [];
     for (const tile of newTiles) {
       if (!tile) continue;
-      const pos = this._findFreeWorkspacePos(tileSize, margin, wsW, wsH, occupied);
+      const pos = this._findFreeWorkspacePos(tileSize, margin, xStep, wsW, wsH, occupied);
       occupied.push(pos);
       this._workspacePositions.set(tile.id, pos);
 
@@ -279,6 +283,7 @@ export class Renderer {
       el.style.position = 'absolute';
       el.style.left     = pos.x + 'px';
       el.style.top      = pos.y + 'px';
+      el.style.zIndex   = String(Math.round((pos.x - margin) / xStep) + 10);
       el.style.cursor   = 'grab';
 
       ws.appendChild(el);
@@ -402,6 +407,7 @@ export class Renderer {
     drag.el.remove();
     this._workspaceEls.delete(drag.tileId);
     this._workspacePositions.delete(drag.tileId);
+    this._tileSlotIdx.delete(drag.tileId);
 
     // Retirer du rack
     const human = this._engine.players.find(p => p.isHuman);
@@ -541,6 +547,12 @@ export class Renderer {
         const delta = p.score - oldScore;
         scoreEl.textContent = p.score;
         if (delta > 0) {
+          // Flash doré sur le score
+          scoreEl.classList.remove('score-flash');
+          void scoreEl.offsetWidth;
+          scoreEl.classList.add('score-flash');
+          scoreEl.addEventListener('animationend', () => scoreEl.classList.remove('score-flash'), { once: true });
+
           const deltaEl = document.createElement('div');
           deltaEl.className = 'score-entry__delta';
           deltaEl.textContent = `+${delta}`;
@@ -666,6 +678,7 @@ export class Renderer {
           wsEl.remove();
           this._workspaceEls.delete(data.tileId);
           this._workspacePositions.delete(data.tileId);
+          this._tileSlotIdx.delete(data.tileId);
         } else if (!this._els.workspace) {
           this._renderRack(human.rack);
         }
@@ -808,36 +821,24 @@ export class Renderer {
   /* PLACEMENT LIBRE DANS LE WORKSPACE                                   */
   /* ================================================================== */
 
-  _findFreeWorkspacePos(tileSize, margin, wsW, wsH, occupied) {
-    const step = tileSize + margin;
-    const topPad = 36; // espace pour le label "VOS TUILES"
+  _findFreeWorkspacePos(tileSize, margin, xStep, wsW, wsH, occupied) {
+    const topPad     = 44; // espace pour le label "VOS TUILES"
+    const yStep      = tileSize + 10; // espacement vertical entre rangées
+    const colsPerRow = Math.max(1, Math.floor((wsW - margin * 2 - tileSize) / xStep) + 1);
 
-    let cx, cy;
-    if (occupied.length === 0) {
-      cx = wsW / 2;
-      cy = wsH / 2;
-    } else {
-      cx = occupied.reduce((s, p) => s + p.x + tileSize / 2, 0) / occupied.length;
-      cy = occupied.reduce((s, p) => s + p.y + tileSize / 2, 0) / occupied.length;
-    }
+    // Parcourir les slots ligne par ligne, gauche → droite (overlap 8px)
+    for (let row = 0; row < 30; row++) {
+      for (let col = 0; col < colsPerRow; col++) {
+        const x = margin + col * xStep;
+        const y = topPad + row * yStep;
 
-    for (let ring = 0; ring <= 14; ring++) {
-      const pts = ring === 0
-        ? [{ ax: 0, ay: 0 }]
-        : Array.from({ length: ring * 8 }, (_, k) => {
-            const a = (k / (ring * 8)) * Math.PI * 2;
-            return { ax: Math.cos(a) * ring * step * 0.95, ay: Math.sin(a) * ring * step * 0.95 };
-          });
+        if (y + tileSize > wsH - margin) continue;
 
-      for (const { ax, ay } of pts) {
-        const x = Math.max(margin, Math.min(wsW - tileSize - margin, cx + ax - tileSize / 2));
-        const y = Math.max(topPad, Math.min(wsH - tileSize - margin, cy + ay - tileSize / 2));
-
-        const overlaps = occupied.some(p =>
-          Math.abs(p.x - x) < tileSize + margin * 0.55 &&
-          Math.abs(p.y - y) < tileSize + margin * 0.55
+        const taken = occupied.some(p =>
+          Math.abs(p.x - x) < xStep * 0.9 &&
+          Math.abs(p.y - y) < yStep * 0.9
         );
-        if (!overlaps) return { x, y };
+        if (!taken) return { x, y };
       }
     }
     return { x: margin, y: topPad };
