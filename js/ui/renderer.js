@@ -6,6 +6,8 @@ import { BOARD_LAYOUT, BOARD_SIZE, BONUS_CSS, BONUS_LABELS, PLAYER_COLORS, AI_LE
 import { DragDropManager } from './drag-drop.js';
 import { ModalManager, showToast } from './modal-manager.js';
 import { floatScore, launchConfetti, animateRackDraw } from './animations.js';
+import { wordInfoService } from '../core/word-info.js';
+import { showWordCard } from './word-card.js';
 
 export class Renderer {
   constructor(engine, elements) {
@@ -24,6 +26,7 @@ export class Renderer {
     // Drag en cours
     this._drag = null; // { el, tileId, letter, value, isBlank, clientX, clientY }
     this._lastHighlightCell = null;
+    this._lastHighlightSlot = null;
   }
 
   init() {
@@ -159,7 +162,7 @@ export class Renderer {
     if (isHuman) this._showTurnRibbon(playerName);
   }
 
-  _onMoveValid({ placements, total, scrabble }) {
+  _onMoveValid({ placements, total, scrabble, mainWord }) {
     placements.forEach((p, idx) => {
       const cell = this._getCell(p.x, p.y);
       const tempEl = cell.querySelector('.tile--temp');
@@ -176,6 +179,15 @@ export class Renderer {
     const firstCell = this._getCell(placements[0]?.x, placements[0]?.y);
     if (firstCell) floatScore(firstCell, `+${total}`, scrabble ? '#f0c040' : '#82e0aa');
     if (scrabble) launchConfetti();
+
+    // Encart de définition si disponible (chargement par lettre à la demande)
+    if (mainWord) {
+      wordInfoService.getAsync(mainWord).then(info => {
+        if (info && (info.description || info.definition)) {
+          showWordCard(mainWord, info);
+        }
+      }).catch(e => console.warn('[WordCard] getAsync error:', e));
+    }
   }
 
   _onMoveInvalid({ reason }) {
@@ -246,10 +258,7 @@ export class Renderer {
     const wsRect = ws.getBoundingClientRect();
     const wsW = wsRect.width  || 340;
     const wsH = wsRect.height || window.innerHeight;
-
-    const cellSize = parseInt(getComputedStyle(document.documentElement)
-      .getPropertyValue('--cell-size')) || 42;
-    const tileSize = cellSize - 2;
+    const tileSize = this._computeTileSize(wsW);
 
     // Créer / mettre à jour le cadre de pioche
     this._ensureTileRack(ws, tileSize, wsW, wsH);
@@ -274,14 +283,22 @@ export class Renderer {
     const occupiedSlots = new Set(this._tileSlotIdx.values());
     const newEls = [];
 
+    const RACK_COLS = 8;
+
     for (const tile of newTiles) {
       if (!tile) continue;
 
-      // Premier emplacement libre
-      let slotIdx = 0;
-      for (let i = 0; i < slots.length; i++) {
+      // Priorité ligne 1 (slots 0..RACK_COLS-1), puis ligne 2
+      let slotIdx = -1;
+      for (let i = 0; i < RACK_COLS; i++) {
         if (!occupiedSlots.has(i)) { slotIdx = i; break; }
       }
+      if (slotIdx === -1) {
+        for (let i = RACK_COLS; i < slots.length; i++) {
+          if (!occupiedSlots.has(i)) { slotIdx = i; break; }
+        }
+      }
+      if (slotIdx === -1) slotIdx = 0;
       occupiedSlots.add(slotIdx);
       this._tileSlotIdx.set(tile.id, slotIdx);
 
@@ -355,9 +372,10 @@ export class Renderer {
     this._drag.clientX = clientX;
     this._drag.clientY = clientY;
 
-    // Surbrillance de la case cible
+    // Surbrillance de la case cible (plateau ou slot rack)
     const under = document.elementFromPoint(clientX, clientY);
     const newCell = under?.closest('.board__cell') ?? null;
+    const newSlot = under?.closest('.tile-rack__slot') ?? null;
 
     if (newCell !== this._lastHighlightCell) {
       this._lastHighlightCell?.classList.remove('drag-over');
@@ -367,14 +385,22 @@ export class Renderer {
         this._lastHighlightCell = newCell;
       }
     }
+
+    if (newSlot !== this._lastHighlightSlot) {
+      this._lastHighlightSlot?.classList.remove('drag-over');
+      this._lastHighlightSlot = newSlot;
+      newSlot?.classList.add('drag-over');
+    }
   }
 
   _endDrag(clientX, clientY) {
     if (!this._drag) return;
 
-    // Nettoyer highlight
+    // Nettoyer highlights
     this._lastHighlightCell?.classList.remove('drag-over');
     this._lastHighlightCell = null;
+    this._lastHighlightSlot?.classList.remove('drag-over');
+    this._lastHighlightSlot = null;
 
     const { el, tileId, letter, value, isBlank } = this._drag;
     document.body.classList.remove('tile-held');
@@ -451,9 +477,7 @@ export class Renderer {
     const wsRect = ws.getBoundingClientRect();
     const wsW = wsRect.width  || 340;
     const wsH = wsRect.height || window.innerHeight;
-    const cellSize = parseInt(getComputedStyle(document.documentElement)
-      .getPropertyValue('--cell-size')) || 42;
-    const tileSize = cellSize - 2;
+    const tileSize = this._computeTileSize(wsW);
 
     this._ensureTileRack(ws, tileSize, wsW, wsH);
     const { slots } = this._computeRackSlotPositions(tileSize, wsW, wsH);
@@ -468,21 +492,18 @@ export class Renderer {
         .map(([, s]) => s)
     );
 
-    // Garder l'emplacement d'origine si libre, sinon prendre le plus proche libre
-    const origSlot = this._tileSlotIdx.get(tileId);
-    let bestSlot = -1;
-    if (origSlot !== undefined && !occupiedSlots.has(origSlot)) {
-      bestSlot = origSlot;
-    } else {
-      let bestDist = Infinity;
-      for (let i = 0; i < slots.length; i++) {
-        if (occupiedSlots.has(i)) continue;
-        const dx = slots[i].x - dropX, dy = slots[i].y - dropY;
-        const dist = dx * dx + dy * dy;
-        if (dist < bestDist) { bestDist = dist; bestSlot = i; }
-      }
+    // Trouver l'emplacement le plus proche du point de dépôt (occupé ou non)
+    let bestSlot = 0, bestDist = Infinity;
+    for (let i = 0; i < slots.length; i++) {
+      const dx = slots[i].x - dropX, dy = slots[i].y - dropY;
+      const dist = dx * dx + dy * dy;
+      if (dist < bestDist) { bestDist = dist; bestSlot = i; }
     }
-    if (bestSlot === -1) bestSlot = 0;
+
+    // Si l'emplacement cible est occupé → décalage intelligent
+    if (occupiedSlots.has(bestSlot)) {
+      bestSlot = this._shiftSlots(bestSlot, tileId, slots);
+    }
 
     const pos = slots[bestSlot];
     this._tileSlotIdx.set(tileId, bestSlot);
@@ -510,10 +531,9 @@ export class Renderer {
     const ws = this._els.workspace;
     if (ws && this._tileSlotIdx.has(tileId)) {
       const wsRect = ws.getBoundingClientRect();
-      const cellSize = parseInt(getComputedStyle(document.documentElement)
-        .getPropertyValue('--cell-size')) || 42;
+      const wsW2   = wsRect.width || 340;
       const { slots } = this._computeRackSlotPositions(
-        cellSize - 2, wsRect.width || 340, wsRect.height || window.innerHeight
+        this._computeTileSize(wsW2), wsW2, wsRect.height || window.innerHeight
       );
       const slotIdx = this._tileSlotIdx.get(tileId);
       if (slots[slotIdx]) pos = slots[slotIdx];
@@ -532,6 +552,8 @@ export class Renderer {
     ws?.appendChild(el);
     this._lastHighlightCell?.classList.remove('drag-over');
     this._lastHighlightCell = null;
+    this._lastHighlightSlot?.classList.remove('drag-over');
+    this._lastHighlightSlot = null;
     this._drag = null;
     document.body.classList.remove('tile-held');
   }
@@ -877,8 +899,15 @@ export class Renderer {
   /* CADRE DE PIOCHE (rack workspace)                                    */
   /* ================================================================== */
 
+  /** Calcule la taille des tuiles pour que les 8 colonnes tiennent dans wsW. */
+  _computeTileSize(wsW) {
+    const COLS = 8, GAP = 8, PAD_X = 14, BDR = 3;
+    const max = Math.floor((wsW - 2 * (BDR + PAD_X) - (COLS - 1) * GAP) / COLS);
+    return Math.max(24, Math.min(max, 52)); // entre 24 px et 52 px
+  }
+
   _computeRackSlotPositions(tileSize, wsW, wsH) {
-    const COLS = 4, ROWS = 2, GAP = 8, PAD_X = 14, PAD_Y = 14, BDR = 3;
+    const COLS = 8, ROWS = 2, GAP = 8, PAD_X = 14, PAD_Y = 14, BDR = 3;
     const innerW = COLS * tileSize + (COLS - 1) * GAP;
     const innerH = ROWS * tileSize + (ROWS - 1) * GAP;
     const rackW  = 2 * (BDR + PAD_X) + innerW;
@@ -898,6 +927,91 @@ export class Renderer {
     return { rackLeft, rackTop, rackW, rackH, slots };
   }
 
+  /**
+   * Décale les tuiles pour faire de la place à `targetSlot`.
+   * Retourne le slot final où la tuile draggée sera posée.
+   * @param {number} targetSlot  - slot cible (occupé par une autre tuile)
+   * @param {string} draggingId  - id de la tuile en cours de drag (à exclure)
+   * @param {Array}  slots       - tableau des positions {x, y} de chaque slot
+   * @returns {number}           - slot effectivement utilisé
+   */
+  _shiftSlots(targetSlot, draggingId, slots) {
+    const COLS  = 8;
+    const TOTAL = slots.length;
+
+    // Construire slotIdx → tileId (sans la tuile draggée)
+    const slotToTile = new Map();
+    for (const [id, si] of this._tileSlotIdx.entries()) {
+      if (id !== draggingId) slotToTile.set(si, id);
+    }
+
+    if (!slotToTile.has(targetSlot)) return targetSlot; // déjà libre
+
+    // Limites de la ligne courante
+    const row      = Math.floor(targetSlot / COLS);
+    const rowStart = row * COLS;
+    const rowEnd   = rowStart + COLS - 1;
+
+    // Slot libre le plus proche à gauche dans la même ligne
+    let leftFree = -1;
+    for (let i = targetSlot - 1; i >= rowStart; i--) {
+      if (!slotToTile.has(i)) { leftFree = i; break; }
+    }
+    // Slot libre le plus proche à droite dans la même ligne
+    let rightFree = -1;
+    for (let i = targetSlot + 1; i <= rowEnd; i++) {
+      if (!slotToTile.has(i)) { rightFree = i; break; }
+    }
+
+    // Aucune place dans cette ligne → chercher n'importe où
+    if (leftFree === -1 && rightFree === -1) {
+      for (let i = 0; i < TOTAL; i++) {
+        if (!slotToTile.has(i)) return i;
+      }
+      return targetSlot;
+    }
+
+    // Choisir le sens qui nécessite le moins de décalages
+    let shiftLeft;
+    if      (leftFree  === -1) shiftLeft = false; // obligé d'aller à droite
+    else if (rightFree === -1) shiftLeft = true;  // obligé d'aller à gauche
+    else shiftLeft = (targetSlot - leftFree) <= (rightFree - targetSlot);
+
+    if (shiftLeft) {
+      // Décaler vers la gauche : chaque tuile de leftFree+1 → targetSlot recule d'un cran
+      for (let i = leftFree; i < targetSlot; i++) {
+        const tid = slotToTile.get(i + 1);
+        if (!tid) continue;
+        this._tileSlotIdx.set(tid, i);
+        this._workspacePositions.set(tid, slots[i]);
+        const tel = this._workspaceEls.get(tid);
+        if (tel) {
+          tel.style.transition = 'left 180ms ease, top 180ms ease';
+          tel.style.left = slots[i].x + 'px';
+          tel.style.top  = slots[i].y + 'px';
+          setTimeout(() => { if (tel) tel.style.transition = ''; }, 200);
+        }
+      }
+    } else {
+      // Décaler vers la droite : chaque tuile de targetSlot → rightFree-1 avance d'un cran
+      for (let i = rightFree; i > targetSlot; i--) {
+        const tid = slotToTile.get(i - 1);
+        if (!tid) continue;
+        this._tileSlotIdx.set(tid, i);
+        this._workspacePositions.set(tid, slots[i]);
+        const tel = this._workspaceEls.get(tid);
+        if (tel) {
+          tel.style.transition = 'left 180ms ease, top 180ms ease';
+          tel.style.left = slots[i].x + 'px';
+          tel.style.top  = slots[i].y + 'px';
+          setTimeout(() => { if (tel) tel.style.transition = ''; }, 200);
+        }
+      }
+    }
+
+    return targetSlot;
+  }
+
   _ensureTileRack(ws, tileSize, wsW, wsH) {
     const { rackLeft, rackTop, rackW, rackH } =
       this._computeRackSlotPositions(tileSize, wsW, wsH);
@@ -908,9 +1022,10 @@ export class Renderer {
       rack.className = 'tile-rack';
       const inner = document.createElement('div');
       inner.className = 'tile-rack__slots';
-      for (let i = 0; i < 8; i++) {
+      for (let i = 0; i < 16; i++) {
         const slot = document.createElement('div');
         slot.className = 'tile-rack__slot';
+        slot.dataset.slotIdx = i;
         inner.appendChild(slot);
       }
       rack.appendChild(inner);
@@ -923,5 +1038,7 @@ export class Renderer {
     rack.style.height  = rackH    + 'px';
     rack.style.padding = '14px';
     rack.style.setProperty('--rack-tile-sz', tileSize + 'px');
+    // Propager sur le workspace pour que les tuiles s'y adaptent via CSS
+    ws.style.setProperty('--rack-tile-sz', tileSize + 'px');
   }
 }

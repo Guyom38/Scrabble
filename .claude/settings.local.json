@@ -14,7 +14,9 @@
       "WebFetch(domain:www.colorhexa.com)",
       "Bash(npm --version)",
       "Bash(npx esbuild:*)",
-      "Bash(node build.js)"
+      "Bash(node build.js)",
+      "Bash(node -e \":*)",
+      "Bash(node:*)"
     ]
   }
 }

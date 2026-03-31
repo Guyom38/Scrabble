@@ -221,15 +221,15 @@ body.tile-held * {
   cursor: grabbing !important;
 }
 
-/* Tuiles dans le workspace — même taille que sur le plateau */
+/* Tuiles dans le workspace — calées sur la taille des cellules du rack */
 .workspace .tile {
-  width:  calc(var(--cell-size) - 2px);
-  height: calc(var(--cell-size) - 2px);
-  font-size:    calc(var(--cell-size) * 0.44);
+  width:  var(--rack-tile-sz, 38px);
+  height: var(--rack-tile-sz, 38px);
+  font-size:    calc(var(--rack-tile-sz, 38px) * 0.44);
   border-radius: 4px;
 }
 .workspace .tile .tile__value {
-  font-size: calc(var(--cell-size) * 0.16);
-  bottom: calc(var(--cell-size) * 0.04);
-  right:  calc(var(--cell-size) * 0.06);
+  font-size: calc(var(--rack-tile-sz, 38px) * 0.16);
+  bottom: calc(var(--rack-tile-sz, 38px) * 0.04);
+  right:  calc(var(--rack-tile-sz, 38px) * 0.06);
 }

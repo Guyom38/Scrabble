@@ -4,6 +4,7 @@ DirectoryIndex index.html
 # MIME types requis pour ES Modules et ressources
 AddType text/javascript          .js .mjs
 AddType text/plain               .txt
+AddType application/json         .json
 AddType text/css                 .css
 AddType image/png                .png
 AddType image/jpeg               .jpg .jpeg
@@ -25,5 +26,5 @@ AddDefaultCharset UTF-8
 
 # Compression gzip
 <IfModule mod_deflate.c>
-  AddOutputFilterByType DEFLATE text/html text/css text/javascript text/plain
+  AddOutputFilterByType DEFLATE text/html text/css text/javascript text/plain application/json
 </IfModule>

@@ -5,14 +5,15 @@
  *   Splash → chargement dico → Menu → Config → Jeu
  */
 
-import { dictionary }   from './core/dictionary.js';
-import { GameEngine }   from './core/game-engine.js';
-import { Renderer }     from './ui/renderer.js';
-import { SplashScreen } from './ui/splash-screen.js';
-import { GameTimer }    from './ui/timer.js';
+import { dictionary }       from './core/dictionary.js';
+import { GameEngine }       from './core/game-engine.js';
+import { Renderer }         from './ui/renderer.js';
+import { SplashScreen }     from './ui/splash-screen.js';
+import { GameTimer }        from './ui/timer.js';
 import { ModalManager, showToast } from './ui/modal-manager.js';
-import { SaveManager }  from './storage/save-manager.js';
+import { SaveManager }      from './storage/save-manager.js';
 import { AI_LEVELS, AI_DEFAULT_NAMES, PLAYER_COLORS } from './core/constants.js';
+import { DICO_DEF_COUNT }   from './data/dico-embedded.js';
 
 /* ================================================================== */
 /* ÉTAT GLOBAL DE L'APPLICATION                                         */
@@ -60,6 +61,12 @@ async function boot() {
   // Attendre que le minimum de temps soit écoulé
   await minDisplayTime;
   console.log('[boot] Transition vers le menu…');
+
+  // Compteur dans le menu (nombre embarqué au build)
+  const dicoCountEl = document.getElementById('dico-count');
+  if (dicoCountEl && DICO_DEF_COUNT > 0) {
+    dicoCountEl.textContent = `📚 ${DICO_DEF_COUNT.toLocaleString('fr-FR')} définitions disponibles`;
+  }
 
   splash.hide(() => {
     console.log('[boot] Splash caché');
