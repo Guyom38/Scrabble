@@ -86,7 +86,7 @@ export class Renderer {
     on('gameOver',       d => this._onGameOver(d));
   }
 
-  _onGameStarted({ players }) {
+  _onGameStarted({ players, resumed = false }) {
     this._humanPlayerId = players.find(p => p.type === 'human')?.id;
     this._players       = players; // pour retrouver couleur + nom par id
     this._tempPlacements.clear();
@@ -101,7 +101,7 @@ export class Renderer {
       document.body.classList.remove('tile-held');
     }
 
-    clearWordHistory();
+    if (!resumed) clearWordHistory();
 
     this._buildBoard();
     this._renderScoreboard(players);

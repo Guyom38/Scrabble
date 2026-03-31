@@ -96,7 +96,7 @@ export class GameEngine {
     if (!save) return false;
     this._restoreFromSave(save);
     this._setState(GAME_STATES.PLAYING);
-    emit('started', { players: this._serializePlayers() });
+    emit('started', { players: this._serializePlayers(), resumed: true });
     emit('boardUpdate', { board: this.board.serialize() });
     emit('tilesRemaining', { count: this.bag.remaining });
     this._startTurn();
