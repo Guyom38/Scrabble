@@ -1,61 +1,71 @@
 /**
- * word-card.js — Panneau de définition affiché dans la colonne du deck
+ * word-card.js — Panneau de définition du mot posé
  *
- * S'affiche dans #workspace (position absolute) au-dessus du rack,
- * et reste visible jusqu'au prochain coup ou jusqu'à disparaître via hideWordCard().
- * N'affiche rien si description ET définition sont vides.
+ * Position fixe calculée dynamiquement à partir du workspace,
+ * pour ne jamais être caché derrière la sidebar.
+ * Disparaît après 6 s ou au prochain coup.
  */
 
 const PANEL_ID = 'word-def-panel';
+let   _hideTimer = null;
 
 function _getPanel() {
-  const ws = document.getElementById('workspace');
-  if (!ws) return null;
-
-  let panel = document.getElementById(PANEL_ID);
-  if (!panel) {
-    panel = document.createElement('div');
-    panel.id        = PANEL_ID;
-    panel.className = 'word-def-panel';
-    panel.setAttribute('aria-live', 'polite');
-    ws.appendChild(panel);
+  let p = document.getElementById(PANEL_ID);
+  if (!p) {
+    p = document.createElement('div');
+    p.id        = PANEL_ID;
+    p.className = 'word-def-panel';
+    document.body.appendChild(p);
   }
-  return panel;
+  return p;
+}
+
+/** Calcule left/width depuis les bounds du workspace. */
+function _positionPanel(panel) {
+  const ws = document.getElementById('workspace');
+  if (!ws) return;
+  const r = ws.getBoundingClientRect();
+  panel.style.left  = (r.left + 12) + 'px';
+  panel.style.width = Math.min(r.width - 24, 360) + 'px';
 }
 
 /**
- * Affiche la définition du mot dans le deck.
+ * Affiche la définition.
  * @param {string} word
- * @param {{ description: string, definition: string }} info
+ * @param {{ description:string, definition:string }} info
  */
 export function showWordCard(word, info) {
-  if (!info.description && !info.definition) return;
+  if (!info || (!info.description && !info.definition)) return;
+
+  if (_hideTimer) { clearTimeout(_hideTimer); _hideTimer = null; }
 
   const panel = _getPanel();
-  if (!panel) return;
+  _positionPanel(panel);
 
   let html = `
     <div class="word-def-panel__header">
-      <span class="word-def-panel__icon" aria-hidden="true">📖</span>
+      <span class="word-def-panel__icon">📖</span>
       <span class="word-def-panel__word">${word}</span>
     </div>`;
-
   if (info.description) html += `<p class="word-def-panel__desc">${info.description}</p>`;
   if (info.definition)  html += `<p class="word-def-panel__def">${info.definition}</p>`;
 
   panel.innerHTML = html;
-  panel.classList.remove('word-def-panel--out');
+
+  panel.classList.remove('word-def-panel--visible', 'word-def-panel--out');
+  void panel.offsetWidth;
   panel.classList.add('word-def-panel--visible');
+
+  _hideTimer = setTimeout(hideWordCard, 6000);
 }
 
-/** Masque le panneau de définition. */
 export function hideWordCard() {
+  if (_hideTimer) { clearTimeout(_hideTimer); _hideTimer = null; }
   const panel = document.getElementById(PANEL_ID);
-  if (!panel) return;
+  if (!panel || !panel.classList.contains('word-def-panel--visible')) return;
   panel.classList.remove('word-def-panel--visible');
   panel.classList.add('word-def-panel--out');
   panel.addEventListener('animationend', () => {
     panel.classList.remove('word-def-panel--out');
-    panel.innerHTML = '';
   }, { once: true });
 }

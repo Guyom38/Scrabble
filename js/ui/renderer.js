@@ -8,6 +8,7 @@ import { ModalManager, showToast } from './modal-manager.js';
 import { floatScore, launchConfetti, animateRackDraw } from './animations.js';
 import { wordInfoService } from '../core/word-info.js';
 import { showWordCard } from './word-card.js';
+import { addWordHistory, clearWordHistory, restoreWordHistory } from './word-history.js';
 
 export class Renderer {
   constructor(engine, elements) {
@@ -33,6 +34,7 @@ export class Renderer {
     this._buildBoard();
     this._attachEngineEvents();
     this._setupWorkspaceDrag();
+    restoreWordHistory(); // restaure après F5
   }
 
   /* ================================================================== */
@@ -86,6 +88,7 @@ export class Renderer {
 
   _onGameStarted({ players }) {
     this._humanPlayerId = players.find(p => p.type === 'human')?.id;
+    this._players       = players; // pour retrouver couleur + nom par id
     this._tempPlacements.clear();
     this._selectedTileIndex = null;
 
@@ -97,6 +100,8 @@ export class Renderer {
       this._drag = null;
       document.body.classList.remove('tile-held');
     }
+
+    clearWordHistory();
 
     this._buildBoard();
     this._renderScoreboard(players);
@@ -162,7 +167,7 @@ export class Renderer {
     if (isHuman) this._showTurnRibbon(playerName);
   }
 
-  _onMoveValid({ placements, total, scrabble, mainWord }) {
+  _onMoveValid({ playerId, placements, total, scrabble, mainWord }) {
     placements.forEach((p, idx) => {
       const cell = this._getCell(p.x, p.y);
       const tempEl = cell.querySelector('.tile--temp');
@@ -180,7 +185,15 @@ export class Renderer {
     if (firstCell) floatScore(firstCell, `+${total}`, scrabble ? '#f0c040' : '#82e0aa');
     if (scrabble) launchConfetti();
 
-    // Encart de définition si disponible (chargement par lettre à la demande)
+    // Historique des mots joués
+    if (mainWord) {
+      const playerIdx = (this._players || []).findIndex(p => p.id === playerId);
+      const color     = PLAYER_COLORS[playerIdx] ?? '#f0c040';
+      const name      = (this._players || [])[playerIdx]?.name ?? '';
+      addWordHistory({ word: mainWord, score: total, playerName: name, color });
+    }
+
+    // Définition du mot (chargement par lettre à la demande)
     if (mainWord) {
       wordInfoService.getAsync(mainWord).then(info => {
         if (info && (info.description || info.definition)) {
