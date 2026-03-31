@@ -105,7 +105,7 @@ const toastContainer = (() => {
     container = document.createElement('div');
     container.id = 'toast-container';
     container.className = 'toast-container';
-    document.body.appendChild(container);
+    (document.getElementById('app-canvas') || document.body).appendChild(container);
   }
   return container;
 })();

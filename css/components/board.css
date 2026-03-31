@@ -281,8 +281,4 @@
   letter-spacing: 0.08em;
 }
 
-/* ---------- Responsive ---------- */
-@media (max-width: 450px) {
-  .board-frame { padding: 7px; border-radius: 10px; border-width: 2px; }
-  .board__cell-label { font-size: clamp(3.5px, 1.1vw, 5px); }
-}
+/* Responsive supprimé — canvas fixe 1920×1080 */

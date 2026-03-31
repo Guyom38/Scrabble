@@ -157,12 +157,12 @@ export class DragDropManager {
       // Créer le fantôme
       ghost = el.cloneNode(true);
       ghost.style.cssText = `
-        position: fixed; pointer-events: none; z-index: 9999;
+        position: absolute; pointer-events: none; z-index: 9999;
         opacity: 0.9; transform: scale(1.15) rotate(2deg);
         left: ${touch.clientX}px; top: ${touch.clientY}px;
         transition: none;
       `;
-      document.body.appendChild(ghost);
+      (document.getElementById('app-canvas') || document.body).appendChild(ghost);
       this._touchEl   = el;
       this._ghostData = data;
     }, { passive: true });

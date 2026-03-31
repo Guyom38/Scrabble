@@ -12,13 +12,16 @@
  * @param {string} [color]
  */
 export function floatScore(anchor, text, color = '#82e0aa') {
-  const rect = anchor.getBoundingClientRect();
+  const canvas = document.getElementById('app-canvas');
+  const canvasRect = canvas?.getBoundingClientRect();
+  const anchorRect = anchor.getBoundingClientRect();
+  const scale = canvasRect ? canvasRect.width / 1920 : 1;
   const el   = document.createElement('div');
   el.textContent = text;
   el.style.cssText = `
-    position: fixed;
-    left:   ${rect.left + rect.width / 2}px;
-    top:    ${rect.top}px;
+    position: absolute;
+    left:   ${(anchorRect.left - (canvasRect?.left || 0)) / scale + anchorRect.width / scale / 2}px;
+    top:    ${(anchorRect.top  - (canvasRect?.top  || 0)) / scale}px;
     transform: translateX(-50%);
     color:  ${color};
     font-family: 'Playfair Display', Georgia, serif;
@@ -30,7 +33,7 @@ export function floatScore(anchor, text, color = '#82e0aa') {
     text-shadow: 0 2px 8px rgba(0,0,0,0.8);
     animation: scoreFloat 900ms ease forwards;
   `;
-  document.body.appendChild(el);
+  (canvas || document.body).appendChild(el);
   el.addEventListener('animationend', () => el.remove());
 }
 
@@ -51,15 +54,15 @@ export function shakeElement(el) {
  */
 export function launchConfetti(count = 60) {
   const colors = ['#f0c040', '#d4a017', '#fff8e0', '#e67e22', '#f1c40f'];
-  const container = document.body;
+  const container = document.getElementById('app-canvas') || document.body;
 
   for (let i = 0; i < count; i++) {
     const c = document.createElement('div');
     const size  = 4 + Math.random() * 8;
     const color = colors[Math.floor(Math.random() * colors.length)];
     c.style.cssText = `
-      position: fixed;
-      left:   ${Math.random() * 100}vw;
+      position: absolute;
+      left:   ${Math.random() * 1920}px;
       top:    -20px;
       width:  ${size}px;
       height: ${size}px;

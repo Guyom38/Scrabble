@@ -14,6 +14,7 @@ import { ModalManager, showToast } from './ui/modal-manager.js';
 import { SaveManager }      from './storage/save-manager.js';
 import { AI_LEVELS, AI_DEFAULT_NAMES, PLAYER_COLORS } from './core/constants.js';
 import { DICO_DEF_COUNT }   from './data/dico-embedded.js';
+import { initResolution }   from './useResolution.js';
 
 /* ================================================================== */
 /* ÉTAT GLOBAL DE L'APPLICATION                                         */
@@ -433,6 +434,7 @@ function _openExchangeModal() {
 /* ================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
+  initResolution();
   wireButtons();
   boot();
 });

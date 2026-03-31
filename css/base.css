@@ -14,17 +14,35 @@ html {
   scroll-behavior: smooth;
 }
 
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
 body {
   font-family: Arial, 'Helvetica Neue', 'Segoe UI', Helvetica, sans-serif;
-  background-color: var(--ui-bg);
+  background-color: #000;
   color: var(--text-primary);
-  min-height: 100vh;
-  overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   user-select: none;
+}
+
+/* ── Canvas fixe 1920×1080, scalé par JS ── */
+#app-canvas {
+  width: 1920px;
+  height: 1080px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: hidden;
+  transform-origin: 0 0;
 
   /* Fond bois — texture simulée par dégradé */
+  background-color: var(--ui-bg);
   background-image:
     repeating-linear-gradient(
       92deg,
@@ -49,7 +67,6 @@ body {
       #221000 80%,
       #1e0e05 100%
     );
-  background-attachment: fixed;
 }
 
 /* ---------- Typographie ---------- */

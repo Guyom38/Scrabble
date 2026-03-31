@@ -357,9 +357,8 @@ export class Renderer {
     const ws = this._els.workspace;
     if (!ws) { this._renderRack(rack); return; }
 
-    const wsRect = ws.getBoundingClientRect();
-    const wsW = wsRect.width  || 340;
-    const wsH = wsRect.height || window.innerHeight;
+    const wsW = ws.offsetWidth  || 340;
+    const wsH = ws.offsetHeight || 1080;
     const tileSize = this._computeTileSize(wsW);
 
     // Créer / mettre à jour le cadre de pioche
@@ -439,10 +438,23 @@ export class Renderer {
     }, { passive: false });
   }
 
+  /** Convertit les coordonnées écran en coordonnées canvas (tenant compte du scale) */
+  _toCanvasCoords(clientX, clientY) {
+    const canvas = document.getElementById('app-canvas');
+    if (!canvas) return { x: clientX, y: clientY };
+    const rect = canvas.getBoundingClientRect();
+    const scale = rect.width / 1920;
+    return {
+      x: (clientX - rect.left) / scale,
+      y: (clientY - rect.top)  / scale,
+    };
+  }
+
   _startDrag(el, tile, clientX, clientY) {
     if (this._drag) this._cancelDrag(); // annuler un éventuel drag en cours
 
     const sz = el.offsetWidth || 40;
+    const pos = this._toCanvasCoords(clientX, clientY);
 
     this._drag = {
       el,
@@ -453,9 +465,9 @@ export class Renderer {
       clientX, clientY,
     };
 
-    el.style.position      = 'fixed';
-    el.style.left          = (clientX - sz / 2) + 'px';
-    el.style.top           = (clientY - sz / 2) + 'px';
+    el.style.position      = 'absolute';
+    el.style.left          = (pos.x - sz / 2) + 'px';
+    el.style.top           = (pos.y - sz / 2) + 'px';
     el.style.zIndex        = '9999';
     el.style.pointerEvents = 'none';
     el.style.transform     = 'scale(1.18) rotate(2deg)';
@@ -463,14 +475,18 @@ export class Renderer {
     el.style.transition    = 'none';
     el.style.cursor        = 'grabbing';
 
+    // Déplacer dans le canvas pour un positionnement absolu correct
+    document.getElementById('app-canvas').appendChild(el);
+
     document.body.classList.add('tile-held');
   }
 
   _moveDrag(clientX, clientY) {
     const { el } = this._drag;
     const sz = el.offsetWidth || 40;
-    el.style.left = (clientX - sz / 2) + 'px';
-    el.style.top  = (clientY - sz / 2) + 'px';
+    const pos = this._toCanvasCoords(clientX, clientY);
+    el.style.left = (pos.x - sz / 2) + 'px';
+    el.style.top  = (pos.y - sz / 2) + 'px';
     this._drag.clientX = clientX;
     this._drag.clientY = clientY;
 
@@ -576,16 +592,17 @@ export class Renderer {
     const ws = this._els.workspace;
     if (!ws) return;
 
-    const wsRect = ws.getBoundingClientRect();
-    const wsW = wsRect.width  || 340;
-    const wsH = wsRect.height || window.innerHeight;
+    const wsW = ws.offsetWidth  || 340;
+    const wsH = ws.offsetHeight || 1080;
     const tileSize = this._computeTileSize(wsW);
 
     this._ensureTileRack(ws, tileSize, wsW, wsH);
     const { slots } = this._computeRackSlotPositions(tileSize, wsW, wsH);
 
-    const dropX = clientX - wsRect.left;
-    const dropY = clientY - wsRect.top;
+    // Convertir les coords écran en coords canvas, puis en relatif workspace
+    const canvasPos = this._toCanvasCoords(clientX, clientY);
+    const dropX = canvasPos.x - ws.offsetLeft;
+    const dropY = canvasPos.y - ws.offsetTop;
 
     // Emplacements déjà pris par les autres tuiles
     const occupiedSlots = new Set(
@@ -634,10 +651,9 @@ export class Renderer {
     let pos = this._workspacePositions.get(tileId) ?? { x: 0, y: 0 };
     const ws = this._els.workspace;
     if (ws && this._tileSlotIdx.has(tileId)) {
-      const wsRect = ws.getBoundingClientRect();
-      const wsW2   = wsRect.width || 340;
+      const wsW2 = ws.offsetWidth || 340;
       const { slots } = this._computeRackSlotPositions(
-        this._computeTileSize(wsW2), wsW2, wsRect.height || window.innerHeight
+        this._computeTileSize(wsW2), wsW2, ws.offsetHeight || 1080
       );
       const slotIdx = this._tileSlotIdx.get(tileId);
       if (slots[slotIdx]) pos = slots[slotIdx];

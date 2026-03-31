@@ -142,27 +142,4 @@
   --rack-gap:       6px;
 }
 
-/* ---------- BREAKPOINTS ---------- */
-@media (max-width: 750px) {
-  :root {
-    --cell-size:   26px;
-    --cell-gap:    1px;
-    --tile-size:   23px;
-    --tile-font:   13px;
-    --tile-sub:    6px;
-    --rack-slot-size: 32px;
-    --rack-gap:    4px;
-  }
-}
-
-@media (max-width: 450px) {
-  :root {
-    --cell-size:   20px;
-    --cell-gap:    1px;
-    --tile-size:   17px;
-    --tile-font:   10px;
-    --tile-sub:    5px;
-    --rack-slot-size: 26px;
-    --rack-gap:    3px;
-  }
-}
+/* Breakpoints supprimés — canvas fixe 1920×1080 avec scale */

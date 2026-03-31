@@ -5,8 +5,8 @@
 /* ---------- Écrans (navigation) ---------- */
 .screen {
   display: none;
-  width: 100%;
-  min-height: 100vh;
+  width: 1920px;
+  height: 1080px;
 }
 .screen.screen--active {
   display: flex;
@@ -23,8 +23,8 @@
   flex-direction: row;
   align-items: stretch;
   padding: 0;
-  width: 100vw;
-  height: 100vh;
+  width: 1920px;
+  height: 1080px;
   overflow: hidden;
 
   background-image: url('../assets/img/background_paysage.png');
@@ -45,15 +45,8 @@
 */
 #screen-game {
   --sidebar-w:   350px;
-  --workspace-w: clamp(414px, 34.2vw, 558px);
-  --cell-size: clamp(
-    22px,
-    min(
-      calc((100vh - 96px) / 15),
-      calc((100vw - var(--sidebar-w) - var(--workspace-w) - 60px) / 15)
-    ),
-    76px
-  );
+  --workspace-w: 500px;
+  --cell-size: calc((1080px - 96px) / 15);
   --cell-gap: 2px;
 }
 
@@ -64,8 +57,8 @@
 .game-layout {
   display: flex;
   flex-direction: row;
-  width: 100%;
-  height: 100vh;
+  width: 1920px;
+  height: 1080px;
   overflow: hidden;
 }
 
@@ -76,7 +69,7 @@
 .game-sidebar {
   width: var(--sidebar-w);
   min-width: var(--sidebar-w);
-  height: 100vh;
+  height: 1080px;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -380,7 +373,7 @@
 }
 
 .btn-sac img {
-  width: clamp(70px, 10vw, 110px);
+  width: 110px;
   height: auto;
   filter: drop-shadow(0 3px 8px rgba(0,0,0,0.6));
   pointer-events: none;
@@ -546,7 +539,7 @@
 .workspace {
   width: var(--workspace-w);
   min-width: var(--workspace-w);
-  height: 100vh;
+  height: 1080px;
   position: relative;
   overflow: visible;
   background: linear-gradient(90deg,
@@ -580,7 +573,7 @@
 .game-main {
   flex: 1;
   min-width: 0;
-  height: 100vh;
+  height: 1080px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -605,7 +598,7 @@
 .menu-logo { text-align: center; }
 .menu-logo__title {
   font-family: 'Playfair Display', Georgia, serif;
-  font-size: clamp(2.5rem,8vw,4.5rem); font-weight: 900;
+  font-size: 4.5rem; font-weight: 900;
   color: var(--accent-gold-light); letter-spacing: 0.12em;
   text-shadow: 0 4px 16px rgba(212,160,23,0.6), 0 0 40px rgba(212,160,23,0.2);
   line-height: 1;
@@ -626,6 +619,7 @@
 #screen-config {
   justify-content: flex-start;
   padding: var(--gap-xl) var(--gap-lg);
+  overflow-y: auto;
 }
 .config-container {
   width: 100%; max-width: 560px;
@@ -690,40 +684,7 @@
    RESPONSIVE — tablette / mobile portrait
    ============================================================ */
 
-@media (max-width: 900px) {
-  #screen-game.screen--active {
-    flex-direction: column;
-    height: auto; min-height: 100vh; overflow: auto;
-    background-image: url('../assets/img/background_portrait.png');
-  }
-  #screen-game {
-    --sidebar-w: 100%;
-    --workspace-w: 0px;
-    --cell-size: clamp(20px, calc((100vw - 16px) / 15.5), 38px);
-  }
-  .game-layout { flex-direction: column; height: auto; }
-  .game-sidebar {
-    width: 100%; height: auto;
-    flex-direction: row; flex-wrap: wrap;
-    align-items: flex-start;
-    padding: 8px 10px; gap: 8px;
-    border-right: none;
-    border-bottom: 2px solid #7a4820;
-  }
-  .sidebar__head { width: 100%; flex-direction: row; align-items: center; padding-bottom: 0; border: none; }
-  .sidebar__logo { font-size: 1.2rem; margin-right: auto; }
-  .sidebar__stats { grid-template-columns: 1fr 1fr; min-width: 160px; }
-  .scoreboard { min-width: 200px; flex: 1; }
-  .sidebar__actions { display: none; }
-  .sidebar__menu-btn { margin-top: 0; width: auto; }
-  .workspace { display: none; }
-  .game-main {
-    height: auto; padding: 6px 4px;
-    flex-direction: column; gap: 8px;
-  }
-  .game-main::after { display: none; }
-  #screen-menu, #screen-config { padding: var(--gap-lg) var(--gap-md); }
-}
+/* Responsive supprimé — canvas fixe 1920×1080 avec scale */
 
 /* ============================================================
    SÉLECTEUR NOMBRE DE JOUEURS (config)
@@ -825,7 +786,7 @@
 
 .turn-overlay__name {
   font-family: 'Playfair Display', Georgia, serif;
-  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  font-size: 2.6rem;
   font-weight: 900;
   color: var(--accent-gold-light);
   text-shadow: 0 0 18px rgba(212,160,23,0.6);
@@ -834,7 +795,7 @@
 
 .turn-overlay__msg {
   font-family: 'Playfair Display', Georgia, serif;
-  font-size: clamp(0.9rem, 1.8vw, 1.15rem);
+  font-size: 1.15rem;
   font-weight: 400;
   font-style: italic;
   color: var(--text-secondary);
@@ -937,13 +898,13 @@
   display: flex;
   flex-direction: column-reverse;
   gap: 8px;
-  max-height: 45vh;
+  max-height: 486px;
   overflow: hidden;
 }
 
 .word-def-panel {
   display: none;
-  max-height: 28vh;
+  max-height: 302px;
   overflow-y: auto;
 
   background: linear-gradient(150deg,
@@ -1005,7 +966,7 @@
 
 .word-def-panel__word {
   font-family: 'Playfair Display', Georgia, serif;
-  font-size: clamp(1.2rem, 2vw, 1.6rem);
+  font-size: 1.6rem;
   font-weight: 900;
   color: var(--accent-gold-light);
   letter-spacing: 0.1em;
