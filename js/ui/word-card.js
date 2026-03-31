@@ -35,7 +35,12 @@ function _positionPanel(panel) {
  * @param {{ description:string, definition:string }} info
  */
 export function showWordCard(word, info) {
-  if (!info || (!info.description && !info.definition)) return;
+  if (!info || (!info.description && !info.definition)) {
+    console.log('[WordCard] Aucune info pour', word);
+    return;
+  }
+
+  console.log('[WordCard] Affichage définition :', word, info);
 
   if (_hideTimer) { clearTimeout(_hideTimer); _hideTimer = null; }
 
@@ -56,7 +61,7 @@ export function showWordCard(word, info) {
   void panel.offsetWidth;
   panel.classList.add('word-def-panel--visible');
 
-  _hideTimer = setTimeout(hideWordCard, 6000);
+  _hideTimer = setTimeout(hideWordCard, 8000);
 }
 
 export function hideWordCard() {

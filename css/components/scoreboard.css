@@ -76,9 +76,10 @@
   white-space: nowrap;
 }
 .score-entry__rank[data-rank="0"] {
-  font-size: 1rem;
+  font-size: 1.3rem;
+  font-weight: 900;
   color: var(--accent-gold-light);
-  text-shadow: 0 0 10px rgba(212,160,23,0.4);
+  text-shadow: 0 0 14px rgba(212,160,23,0.5);
 }
 .score-entry__rank[data-rank="1"] {
   font-size: 0.85rem;
