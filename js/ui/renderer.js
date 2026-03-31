@@ -860,7 +860,7 @@ export class Renderer {
   }
 
   _setControlsEnabled(enabled) {
-    ['btn-validate','btn-recall','btn-shuffle','btn-exchange','btn-pass'].forEach(id => {
+    ['btn-validate','btn-sac','btn-exchange','btn-pass'].forEach(id => {
       const btn = document.getElementById(id);
       if (btn) btn.disabled = !enabled;
     });

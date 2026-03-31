@@ -298,13 +298,22 @@ function wireButtons() {
     renderer?.submitMove();
   });
 
-  document.getElementById('btn-recall')?.addEventListener('click', () => {
+  document.getElementById('btn-sac')?.addEventListener('click', () => {
     renderer?.recallAll();
   });
 
-  document.getElementById('btn-shuffle')?.addEventListener('click', () => {
-    renderer?.shuffleRack();
-  });
+  // Secouer le sac quand des tuiles sont piochées
+  const _sacBtn = document.getElementById('btn-sac');
+  function _shakeSac() {
+    if (!_sacBtn) return;
+    _sacBtn.classList.remove('btn-sac--shaking');
+    void _sacBtn.offsetWidth; // reset
+    _sacBtn.classList.add('btn-sac--shaking');
+    _sacBtn.addEventListener('animationend', () => {
+      _sacBtn.classList.remove('btn-sac--shaking');
+    }, { once: true });
+  }
+  document.addEventListener('game:moveValid', _shakeSac);
 
   document.getElementById('btn-pass')?.addEventListener('click', () => {
     ModalManager.open('modal-confirm-pass');

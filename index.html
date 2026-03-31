@@ -177,14 +177,16 @@
       <section class="sidebar__section sidebar__actions">
         <button id="btn-validate" class="btn btn--success  rack-controls btn--action-main">✓ Valider le mot</button>
         <div class="rack-controls sidebar__actions-row">
-          <button id="btn-recall"   class="btn btn--secondary">↩ Rappeler</button>
-          <button id="btn-shuffle"  class="btn btn--secondary">⇄ Mélanger</button>
-        </div>
-        <div class="rack-controls sidebar__actions-row">
           <button id="btn-exchange" class="btn btn--secondary">⇌ Échanger</button>
           <button id="btn-pass"     class="btn btn--secondary">⏭ Passer</button>
         </div>
       </section>
+
+      <!-- Sac : rappelle toutes les tuiles du plateau -->
+      <button id="btn-sac" class="btn-sac" aria-label="Rappeler les tuiles dans le sac">
+        <img src="assets/img/sac.png" alt="" draggable="false">
+        <span class="btn-sac__label">Rappeler</span>
+      </button>
 
       <!-- Menu -->
       <button id="btn-game-menu" class="btn btn--ghost sidebar__menu-btn">☰ Menu</button>
