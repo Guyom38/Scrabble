@@ -36,11 +36,13 @@ export function showWordCard(word, info) {
     <div class="word-def-panel__header">
       <span class="word-def-panel__icon">📖</span>
       <span class="word-def-panel__word">${word}</span>
+      <button class="word-def-panel__close" aria-label="Fermer">&times;</button>
     </div>`;
   if (info.description) html += `<p class="word-def-panel__desc">${info.description}</p>`;
   if (info.definition)  html += `<p class="word-def-panel__def">${info.definition}</p>`;
 
   panel.innerHTML = html;
+  panel.querySelector('.word-def-panel__close').addEventListener('click', () => _hidePanel(panel));
   container.appendChild(panel);
 
   setTimeout(() => _hidePanel(panel), 8000);
@@ -50,9 +52,8 @@ function _hidePanel(panel) {
   if (!panel || !panel.parentNode) return;
   panel.classList.remove('word-def-panel--visible');
   panel.classList.add('word-def-panel--out');
-  panel.addEventListener('animationend', () => {
-    panel.remove();
-  }, { once: true });
+  panel.addEventListener('animationend', () => panel.remove(), { once: true });
+  setTimeout(() => { if (panel.parentNode) panel.remove(); }, 400);
 }
 
 export function hideWordCard() {

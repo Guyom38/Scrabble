@@ -295,84 +295,98 @@
 .game-menu-panel {
   background:
     linear-gradient(160deg,
-      var(--ui-surface-3) 0%,
-      var(--ui-surface-2) 100%
+      rgba(18, 8, 2, 0.97) 0%,
+      rgba(28, 14, 4, 0.98) 50%,
+      rgba(18, 8, 2, 0.97) 100%
     );
-  border: 1px solid var(--ui-border-light);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-xl), inset 0 1px 0 rgba(255,255,255,0.07);
-  width: 260px;
-  padding: 28px 20px 20px;
+  border: 2px solid rgba(212, 160, 23, 0.35);
+  border-radius: 16px;
+  box-shadow:
+    0 12px 48px rgba(0,0,0,0.7),
+    0 0 80px rgba(0,0,0,0.3),
+    inset 0 1px 0 rgba(255,200,80,0.1);
+  backdrop-filter: blur(10px);
+  width: 300px;
+  padding: 32px 28px 28px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
   animation: modalIn 300ms cubic-bezier(0.34,1.2,0.64,1) both;
 }
 
 .game-menu-panel__title {
   font-family: 'Playfair Display', Georgia, serif;
-  font-size: 1.4rem;
-  font-weight: 700;
+  font-size: 1.5rem;
+  font-weight: 900;
   color: var(--accent-gold-light);
   text-align: center;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
+  text-shadow: 0 0 16px rgba(212,160,23,0.3);
   border-bottom: 1px solid rgba(212,160,23,0.2);
-  padding-bottom: 16px;
+  padding-bottom: 18px;
 }
 
 .game-menu-panel__actions {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .game-menu-panel__btn {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   box-sizing: border-box;
-  padding: 11px 16px;
-  border-radius: var(--radius-md);
+  padding: 13px 20px;
+  border-radius: 10px;
   font-family: 'Lato', sans-serif;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-align: center;
   cursor: pointer;
   border: 1px solid transparent;
-  transition: all var(--transition-fast);
+  transition: all 0.15s ease;
   white-space: nowrap;
 }
 
 .game-menu-panel__btn--resume {
   background: linear-gradient(145deg, #d4a017, #b88010);
   color: #1a0800;
-  box-shadow: 0 3px 8px rgba(180,120,10,0.35);
+  border-color: rgba(212,160,23,0.5);
+  box-shadow: 0 3px 12px rgba(180,120,10,0.4);
+  font-size: 1.05rem;
+  padding: 15px 20px;
 }
 .game-menu-panel__btn--resume:hover {
-  background: linear-gradient(145deg, #e0b020, #c89018);
-  transform: translateY(-1px);
-  box-shadow: 0 5px 14px rgba(200,140,20,0.5);
+  background: linear-gradient(145deg, #e4bc28, #c89018);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(200,140,20,0.55);
 }
 
 .game-menu-panel__btn--new {
-  background: var(--ui-surface-3);
+  background: rgba(255,255,255,0.06);
   color: var(--text-primary);
-  border-color: var(--ui-border);
+  border-color: rgba(255,255,255,0.12);
 }
 .game-menu-panel__btn--new:hover {
-  background: var(--ui-border);
+  background: rgba(255,255,255,0.12);
   color: var(--accent-gold-light);
+  border-color: rgba(212,160,23,0.3);
   transform: translateY(-1px);
 }
 
 .game-menu-panel__btn--quit {
   background: transparent;
-  color: #e74c3c;
-  border-color: rgba(231,76,60,0.3);
+  color: rgba(231,76,60,0.8);
+  border-color: rgba(231,76,60,0.2);
+  font-size: 0.88rem;
 }
 .game-menu-panel__btn--quit:hover {
-  background: rgba(231,76,60,0.12);
-  border-color: rgba(231,76,60,0.6);
+  background: rgba(231,76,60,0.1);
+  color: #e74c3c;
+  border-color: rgba(231,76,60,0.5);
   transform: translateY(-1px);
 }

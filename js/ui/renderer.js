@@ -178,7 +178,7 @@ export class Renderer {
       this._els.turnIndicator.parentElement?.classList.toggle('turn-indicator--active', isMyTurn);
     }
 
-    if (isHuman) this._showTurnRibbon(playerName);
+    if (isHuman) this._showTurnOverlay(playerName);
   }
 
   _onMoveValid({ playerId, placements, total, scrabble, mainWord, wordScores }) {
@@ -960,18 +960,25 @@ export class Renderer {
   /* RUBAN DE TOUR                                                        */
   /* ================================================================== */
 
-  _showTurnRibbon(playerName) {
-    const ribbon = document.getElementById('turn-ribbon');
-    if (!ribbon) return;
-    const nameEl = ribbon.querySelector('.turn-ribbon__name');
+  _showTurnOverlay(playerName) {
+    const overlay = document.getElementById('turn-overlay');
+    if (!overlay) return;
+
+    // Move overlay inside board-frame if not already there
+    const boardFrame = document.querySelector('.board-frame');
+    if (boardFrame && overlay.parentNode !== boardFrame) {
+      boardFrame.appendChild(overlay);
+    }
+
+    const nameEl = overlay.querySelector('.turn-overlay__name');
     if (nameEl) nameEl.textContent = playerName;
 
-    ribbon.classList.remove('turn-ribbon--active');
-    void ribbon.offsetWidth; // force reflow
-    ribbon.classList.add('turn-ribbon--active');
+    overlay.classList.remove('turn-overlay--active');
+    void overlay.offsetWidth; // force reflow
+    overlay.classList.add('turn-overlay--active');
 
-    ribbon.addEventListener('animationend', () => {
-      ribbon.classList.remove('turn-ribbon--active');
+    overlay.addEventListener('animationend', () => {
+      overlay.classList.remove('turn-overlay--active');
     }, { once: true });
   }
 

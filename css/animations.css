@@ -215,12 +215,12 @@
 .anim-delay-6 { animation-delay: 600ms; }
 .anim-delay-7 { animation-delay: 700ms; }
 
-/* ---------- Ruban de tour ---------- */
-@keyframes ribbon-slide {
-  0%   { transform: translateX(-110%); opacity: 0; }
-  12%  { transform: translateX(0);     opacity: 1; }
-  80%  { transform: translateX(0);     opacity: 1; }
-  100% { transform: translateX(-110%); opacity: 0; }
+/* ---------- Overlay de tour ---------- */
+@keyframes turnOverlayShow {
+  0%   { opacity: 0; }
+  12%  { opacity: 1; }
+  75%  { opacity: 1; }
+  100% { opacity: 0; }
 }
 
 /* ---------- Highlight mot formé (contour doré pulsé) ---------- */

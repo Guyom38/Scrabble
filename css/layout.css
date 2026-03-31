@@ -758,59 +758,58 @@
 .level-selector--hidden { display: none !important; }
 
 /* ============================================================
-   RUBAN DE TOUR (overlay global)
+   INDICATEUR DE TOUR (overlay centré sur le plateau)
    ============================================================ */
 
-.turn-ribbon {
-  position: fixed;
-  bottom: 24px;
-  left: 0; right: 0;
-  height: 48px;
-  z-index: 9000;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-.turn-ribbon__band {
+.turn-overlay {
   position: absolute;
   inset: 0;
-  display: flex; align-items: center; justify-content: flex-start;
-  background: rgba(10, 4, 0, 0.82);
-  border-top: 1px solid rgba(212, 160, 23, 0.28);
-  border-bottom: 1px solid rgba(212, 160, 23, 0.28);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.turn-overlay--active {
+  opacity: 1;
+  animation: turnOverlayShow 2.2s ease both;
+}
+
+.turn-overlay__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 28px 56px 24px;
+  background: rgba(10, 4, 0, 0.92);
+  border: 2px solid rgba(212, 160, 23, 0.5);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
   box-shadow:
-    0 -4px 16px rgba(0,0,0,0.5),
-    0  4px 16px rgba(0,0,0,0.5);
-  backdrop-filter: blur(6px);
-  transform: translateX(-110%);
+    0 8px 40px rgba(0,0,0,0.7),
+    0 0 60px rgba(212,160,23,0.08),
+    inset 0 1px 0 rgba(255,200,80,0.15);
 }
 
-.turn-ribbon--active .turn-ribbon__band {
-  animation: ribbon-slide 3.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-.turn-ribbon__content {
-  display: flex; align-items: baseline;
-  gap: 0.35em; padding: 0 clamp(16px, 4vw, 48px);
-  white-space: nowrap;
-}
-
-.turn-ribbon__name {
+.turn-overlay__name {
   font-family: 'Playfair Display', Georgia, serif;
-  font-size: clamp(0.95rem, 2vw, 1.2rem);
-  font-weight: 700;
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  font-weight: 900;
   color: var(--accent-gold-light);
-  text-shadow: 0 0 12px rgba(212,160,23,0.5);
-  letter-spacing: 0.04em;
+  text-shadow: 0 0 18px rgba(212,160,23,0.6);
+  letter-spacing: 0.06em;
 }
 
-.turn-ribbon__msg {
+.turn-overlay__msg {
   font-family: 'Playfair Display', Georgia, serif;
-  font-size: clamp(0.8rem, 1.6vw, 1rem);
+  font-size: clamp(0.9rem, 1.8vw, 1.15rem);
   font-weight: 400;
   font-style: italic;
   color: var(--text-secondary);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.03em;
 }
 
 /* ============================================================
@@ -832,7 +831,6 @@
   gap: 4px 6px;
   padding: 6px 4px;
   scrollbar-width: none;
-  pointer-events: none;
 }
 .word-history::-webkit-scrollbar { display: none; }
 
@@ -855,6 +853,11 @@
   border-radius: 12px;
   backdrop-filter: blur(4px);
   white-space: nowrap;
+  cursor: pointer;
+}
+.word-history__bubble:hover {
+  background: rgba(30, 14, 0, 0.9);
+  border-color: rgba(212, 160, 23, 0.4);
 }
 
 /* Nouvelle entrée — pop depuis la gauche */
@@ -901,7 +904,7 @@
   left: 12px;
   right: 12px;
   z-index: 50;
-  pointer-events: none;
+  pointer-events: auto;
   display: flex;
   flex-direction: column-reverse;
   gap: 8px;
@@ -948,6 +951,21 @@
   margin-bottom: 10px;
   padding-bottom: 10px;
   border-bottom: 1px solid rgba(212, 160, 23, 0.2);
+}
+
+.word-def-panel__close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: rgba(220, 195, 150, 0.5);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+  transition: color 0.15s;
+}
+.word-def-panel__close:hover {
+  color: rgba(255, 220, 170, 0.95);
 }
 
 .word-def-panel__icon {
