@@ -264,20 +264,21 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%) scale(0);
+  transform: translate(-50%, -120%) scale(0);
   z-index: 100;
   font-family: 'Playfair Display', Georgia, serif;
-  font-size: clamp(10px, calc(var(--cell-size) * 0.36), 16px);
+  font-size: clamp(14px, calc(var(--cell-size) * 0.7), 28px);
   font-weight: 900;
   white-space: nowrap;
   text-shadow:
-    0 0 8px currentColor,
-    0 2px 4px rgba(0,0,0,0.8),
-    -1px -1px 0 rgba(0,0,0,0.5),
-    1px 1px 0 rgba(0,0,0,0.5);
+    0 0 12px currentColor,
+    0 0 24px currentColor,
+    0 2px 6px rgba(0,0,0,0.9),
+    -1px -1px 0 rgba(0,0,0,0.6),
+    1px 1px 0 rgba(0,0,0,0.6);
   pointer-events: none;
-  animation: bonusPop 900ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
-  letter-spacing: 0.06em;
+  animation: bonusPop 1400ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  letter-spacing: 0.08em;
 }
 
 /* ---------- Responsive ---------- */

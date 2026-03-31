@@ -260,7 +260,7 @@ export class GameEngine {
   _scheduleAIMove(player) {
     const delays = { easy: [800, 1600], medium: [1200, 2400], hard: [1800, 3000] };
     const [min, max] = delays[player.aiLevel] || [1200, 2400];
-    const delay = min + Math.random() * (max - min);
+    const delay = 1000 + min + Math.random() * (max - min); // +1s pour laisser la définition s'afficher
 
     this._aiTimer = setTimeout(() => this._executeAIMove(player), delay);
   }

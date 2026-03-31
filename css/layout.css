@@ -894,15 +894,25 @@
    PANNEAU DÉFINITION — fixed sur body (immunisé contre innerHTML)
    ============================================================ */
 
+/* Conteneur empilé des définitions — dans le workspace, en bas */
+.word-def-stack {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  right: 12px;
+  z-index: 50;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 8px;
+  max-height: 45vh;
+  overflow: hidden;
+}
+
 .word-def-panel {
   display: none;
-  position: fixed;
-  bottom: 84px;
-  /* left et width calculés dynamiquement depuis workspace bounds */
-  max-height: 40vh;
+  max-height: 28vh;
   overflow-y: auto;
-  z-index: 9500;
-  pointer-events: none;
 
   background: linear-gradient(150deg,
     rgba(10, 4, 0, 0.96) 0%,

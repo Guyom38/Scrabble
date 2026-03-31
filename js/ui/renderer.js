@@ -84,6 +84,17 @@ export class Renderer {
     on('message',        d => showToast(d.text, d.type));
     on('stateChange',    d => this._onStateChange(d));
     on('gameOver',       d => this._onGameOver(d));
+
+    // Clic sur une bulle d'historique → afficher la définition
+    document.addEventListener('wordHistory:click', (e) => {
+      const { word } = e.detail;
+      if (!word) return;
+      wordInfoService.getAsync(word).then(info => {
+        if (info && (info.description || info.definition)) {
+          showWordCard(word, info);
+        }
+      }).catch(() => {});
+    });
   }
 
   _onGameStarted({ players, resumed = false }) {
@@ -105,6 +116,9 @@ export class Renderer {
 
     this._buildBoard();
     this._renderScoreboard(players);
+
+    // Restaurer les bulles après que le workspace a été reconstruit
+    if (resumed) restoreWordHistory();
 
     this._dnd = new DragDropManager({
       onRackToBoard:  d => this._handleRackToBoard(d),
