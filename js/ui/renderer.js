@@ -28,13 +28,23 @@ export class Renderer {
     this._drag = null; // { el, tileId, letter, value, isBlank, clientX, clientY }
     this._lastHighlightCell = null;
     this._lastHighlightSlot = null;
+
+    // Définitions automatiques (off par défaut)
+    this._autoDef = false;
+
+    // AbortController pour nettoyage propre des listeners document
+    this._abortCtrl = new AbortController();
+  }
+
+  destroy() {
+    this._abortCtrl.abort();
   }
 
   init() {
     this._buildBoard();
     this._attachEngineEvents();
     this._setupWorkspaceDrag();
-    restoreWordHistory(); // restaure après F5
+    this._setupAutoDefToggle();
   }
 
   /* ================================================================== */
@@ -72,7 +82,8 @@ export class Renderer {
   /* ================================================================== */
 
   _attachEngineEvents() {
-    const on = (name, fn) => document.addEventListener(`game:${name}`, e => fn(e.detail));
+    const sig = { signal: this._abortCtrl.signal };
+    const on = (name, fn) => document.addEventListener(`game:${name}`, e => fn(e.detail), sig);
     on('started',        d => this._onGameStarted(d));
     on('boardUpdate',    d => this._onBoardUpdate(d));
     on('rackUpdate',     d => this._onRackUpdate(d));
@@ -94,7 +105,7 @@ export class Renderer {
           showWordCard(word, info);
         }
       }).catch(() => {});
-    });
+    }, sig);
   }
 
   _onGameStarted({ players, resumed = false }) {
@@ -116,6 +127,12 @@ export class Renderer {
 
     this._buildBoard();
     this._renderScoreboard(players);
+
+    // Pulse sur le sac pour inviter à jouer (uniquement nouvelle partie)
+    const sacBtn = document.getElementById('btn-sac');
+    if (sacBtn) {
+      sacBtn.classList.toggle('btn-sac--pulse', !resumed);
+    }
 
     // Restaurer les bulles après que le workspace a été reconstruit
     if (resumed) restoreWordHistory();
@@ -147,6 +164,10 @@ export class Renderer {
 
   _onRackUpdate({ playerId, rack }) {
     if (playerId !== this._humanPlayerId) return;
+
+    // Animer le sac pour indiquer la pioche
+    this._shakeSac();
+
     if (this._els.workspace) {
       this._renderWorkspace(rack);
     } else {
@@ -182,6 +203,9 @@ export class Renderer {
   }
 
   _onMoveValid({ playerId, placements, total, scrabble, mainWord, wordScores }) {
+    // Arrêter le pulse du sac dès le premier coup
+    document.getElementById('btn-sac')?.classList.remove('btn-sac--pulse');
+
     placements.forEach((p, idx) => {
       const cell = this._getCell(p.x, p.y);
       const tempEl = cell.querySelector('.tile--temp');
@@ -244,8 +268,8 @@ export class Renderer {
       addWordHistory({ word: mainWord, score: total, playerName: name, color });
     }
 
-    // 5) Définition du mot
-    if (mainWord) {
+    // 5) Définition du mot (seulement si auto-définition activée)
+    if (mainWord && this._autoDef) {
       wordInfoService.getAsync(mainWord).then(info => {
         if (info && (info.description || info.definition)) {
           showWordCard(mainWord, info);
@@ -297,22 +321,36 @@ export class Renderer {
     const ws = this._els.workspace;
     if (!ws) return;
 
+    const sig = { signal: this._abortCtrl.signal };
+
     // Déplacement du tile en cours de drag
     document.addEventListener('mousemove', (e) => {
       if (!this._drag) return;
       this._moveDrag(e.clientX, e.clientY);
-    });
+    }, sig);
 
     // Relâchement : déposer
     document.addEventListener('mouseup', (e) => {
       if (!this._drag) return;
       this._endDrag(e.clientX, e.clientY);
-    });
+    }, sig);
 
     // Échap : annuler
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && this._drag) this._cancelDrag();
-    });
+    }, sig);
+  }
+
+  _setupAutoDefToggle() {
+    const btn = document.getElementById('btn-auto-def');
+    if (!btn) return;
+    btn.setAttribute('aria-pressed', 'false');
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this._autoDef = !this._autoDef;
+      btn.setAttribute('aria-pressed', String(this._autoDef));
+      console.log('[AutoDef]', this._autoDef ? 'ON' : 'OFF');
+    }, { signal: this._abortCtrl.signal });
   }
 
   _renderWorkspace(rack) {
@@ -924,6 +962,18 @@ export class Renderer {
       this._selectedTileIndex = index;
       tileEl.classList.add('tile--selected');
     }
+  }
+
+  _shakeSac() {
+    const btn = document.getElementById('btn-sac');
+    if (!btn) return;
+    btn.classList.remove('btn-sac--pulse');
+    btn.classList.remove('btn-sac--shaking');
+    void btn.offsetWidth;
+    btn.classList.add('btn-sac--shaking');
+    btn.addEventListener('animationend', () => {
+      btn.classList.remove('btn-sac--shaking');
+    }, { once: true });
   }
 
   _setControlsEnabled(enabled) {

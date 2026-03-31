@@ -207,6 +207,34 @@
   color: var(--text-secondary);
   letter-spacing: 0.06em;
 }
+.sidebar__toggle-def {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(139,94,48,0.3);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  color: var(--text-muted, #8a7a6a);
+  cursor: pointer;
+  opacity: 0.5;
+  position: relative;
+  z-index: 5;
+  transition: opacity 0.2s, color 0.2s, border-color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+.sidebar__toggle-def:hover {
+  opacity: 0.8;
+  background: rgba(255,255,255,0.06);
+}
+.sidebar__toggle-def[aria-pressed="true"] {
+  opacity: 1;
+  color: var(--accent-gold-light, #d4a017);
+  border-color: var(--accent-gold-light, #d4a017);
+  background: rgba(212,160,23,0.15);
+  box-shadow: 0 0 8px rgba(212,160,23,0.35), inset 0 0 6px rgba(212,160,23,0.1);
+}
 
 /* ── Spacer ── */
 .sidebar__spacer {
@@ -357,6 +385,17 @@
   filter: drop-shadow(0 3px 8px rgba(0,0,0,0.6));
   pointer-events: none;
   transform-origin: center bottom;
+}
+
+/* Animation zoom-pulse d'appel au début de partie */
+.btn-sac--pulse img {
+  animation: sac-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes sac-pulse {
+  0%   { transform: scale(1);    filter: drop-shadow(0 3px 8px rgba(0,0,0,0.6)); }
+  50%  { transform: scale(1.12); filter: drop-shadow(0 6px 18px rgba(212,160,23,0.5)); }
+  100% { transform: scale(1);    filter: drop-shadow(0 3px 8px rgba(0,0,0,0.6)); }
 }
 
 /* Animation secouage lors de la pioche */
@@ -519,19 +558,9 @@
   flex-shrink: 0;
 }
 
-/* Label discret en haut */
+/* Label discret en haut (supprimé) */
 .workspace::before {
-  content: 'VOS TUILES';
-  position: absolute;
-  top: 14px;
-  left: 0; right: 0;
-  text-align: center;
-  font-size: 0.57rem;
-  font-weight: 900;
-  letter-spacing: 0.22em;
-  color: rgba(139,94,48,0.45);
-  text-transform: uppercase;
-  pointer-events: none;
+  display: none;
   z-index: 1;
 }
 

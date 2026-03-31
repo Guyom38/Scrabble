@@ -219,6 +219,9 @@ function _updatePlayerRows(totalPlayers, states) {
 function _startGame(config) {
   showScreen('screen-game');
 
+  // Nettoyer l'ancien renderer (supprimer les listeners)
+  if (renderer) renderer.destroy();
+
   // Initialiser le moteur
   engine   = new GameEngine();
   renderer = new Renderer(engine, {
@@ -244,6 +247,9 @@ function _startGame(config) {
 
 function _resumeGame() {
   showScreen('screen-game');
+
+  // Nettoyer l'ancien renderer (supprimer les listeners)
+  if (renderer) renderer.destroy();
 
   engine   = new GameEngine();
   renderer = new Renderer(engine, {
@@ -301,19 +307,6 @@ function wireButtons() {
   document.getElementById('btn-sac')?.addEventListener('click', () => {
     renderer?.recallAll();
   });
-
-  // Secouer le sac quand des tuiles sont piochées
-  const _sacBtn = document.getElementById('btn-sac');
-  function _shakeSac() {
-    if (!_sacBtn) return;
-    _sacBtn.classList.remove('btn-sac--shaking');
-    void _sacBtn.offsetWidth; // reset
-    _sacBtn.classList.add('btn-sac--shaking');
-    _sacBtn.addEventListener('animationend', () => {
-      _sacBtn.classList.remove('btn-sac--shaking');
-    }, { once: true });
-  }
-  document.addEventListener('game:moveValid', _shakeSac);
 
   document.getElementById('btn-pass')?.addEventListener('click', () => {
     ModalManager.open('modal-confirm-pass');
