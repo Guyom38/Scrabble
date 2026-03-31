@@ -167,25 +167,62 @@ export class Renderer {
     if (isHuman) this._showTurnRibbon(playerName);
   }
 
-  _onMoveValid({ playerId, placements, total, scrabble, mainWord }) {
+  _onMoveValid({ playerId, placements, total, scrabble, mainWord, wordScores }) {
     placements.forEach((p, idx) => {
       const cell = this._getCell(p.x, p.y);
       const tempEl = cell.querySelector('.tile--temp');
       if (tempEl) {
         tempEl.classList.remove('tile--temp');
         tempEl.classList.add('tile--placed', 'anim-tile-lock');
-        tempEl.style.animationDelay = `${idx * 70}ms`; // vague séquentielle
+        tempEl.style.animationDelay = `${idx * 70}ms`;
         tempEl.draggable = false;
         tempEl.removeAttribute('draggable');
       }
       this._tempPlacements.delete(`${p.x},${p.y}`);
     });
 
+    // 1) Entourer les mots formés
+    const allBonuses = [];
+    if (wordScores) {
+      for (const ws of wordScores) {
+        if (ws.coords) {
+          for (const c of ws.coords) {
+            const cell = this._getCell(c.x, c.y);
+            if (cell) {
+              cell.classList.add('cell--word-highlight');
+              setTimeout(() => cell.classList.remove('cell--word-highlight'), 1200);
+            }
+          }
+        }
+        if (ws.bonuses) allBonuses.push(...ws.bonuses);
+      }
+    }
+
+    // 2) Après le highlight, afficher les bonus BD
+    if (allBonuses.length > 0) {
+      setTimeout(() => {
+        allBonuses.forEach((b, i) => {
+          const cell = this._getCell(b.x, b.y);
+          if (!cell) return;
+          const LABELS = { tw: 'MOT ×3', dw: 'MOT ×2', tl: 'LET ×3', dl: 'LET ×2' };
+          const COLORS = { tw: '#e74c3c', dw: '#e08090', tl: '#3498db', dl: '#5aaad8' };
+          const pop = document.createElement('div');
+          pop.className = 'bonus-pop';
+          pop.textContent = LABELS[b.type] || '';
+          pop.style.color = COLORS[b.type] || '#f0c040';
+          pop.style.animationDelay = `${i * 120}ms`;
+          cell.appendChild(pop);
+          pop.addEventListener('animationend', () => pop.remove(), { once: true });
+        });
+      }, 400);
+    }
+
+    // 3) Score flottant + confettis
     const firstCell = this._getCell(placements[0]?.x, placements[0]?.y);
     if (firstCell) floatScore(firstCell, `+${total}`, scrabble ? '#f0c040' : '#82e0aa');
     if (scrabble) launchConfetti();
 
-    // Historique des mots joués
+    // 4) Historique des mots joués
     if (mainWord) {
       const playerIdx = (this._players || []).findIndex(p => p.id === playerId);
       const color     = PLAYER_COLORS[playerIdx] ?? '#f0c040';
@@ -193,7 +230,7 @@ export class Renderer {
       addWordHistory({ word: mainWord, score: total, playerName: name, color });
     }
 
-    // Définition du mot (chargement par lettre à la demande)
+    // 5) Définition du mot
     if (mainWord) {
       wordInfoService.getAsync(mainWord).then(info => {
         if (info && (info.description || info.definition)) {

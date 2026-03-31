@@ -3,7 +3,11 @@
  *
  * Bulles empilées depuis le haut-droit de la colonne workspace.
  * Persistance via localStorage : résiste au F5.
+ * Clic sur une bulle → affiche la définition du mot.
  */
+
+import { wordInfoService } from '../core/word-info.js';
+import { showWordCard } from './word-card.js';
 
 const CONTAINER_ID   = 'word-history';
 const STORAGE_KEY    = 'scrabble_word_history';
@@ -40,6 +44,16 @@ function _getContainer() {
   return c;
 }
 
+/* ── Clic → définition ───────────────────────────────────────────── */
+
+function _onBubbleClick(word) {
+  wordInfoService.getAsync(word).then(info => {
+    if (info && (info.description || info.definition)) {
+      showWordCard(word, info);
+    }
+  }).catch(() => {});
+}
+
 /* ── Rendu ───────────────────────────────────────────────────────── */
 
 function _render(animateLast = false) {
@@ -56,11 +70,15 @@ function _render(animateLast = false) {
 
     const bubble = document.createElement('div');
     bubble.className = 'word-history__bubble';
-    bubble.title     = playerName;
+    bubble.title     = `${playerName} — cliquez pour la définition`;
+    bubble.style.cursor = 'pointer';
     bubble.innerHTML = `
       <span class="word-history__dot" style="background:${color};box-shadow:0 0 4px ${color}"></span>
       <span class="word-history__word">${word}</span>
       <span class="word-history__score" style="color:${color}">+${score}</span>`;
+
+    bubble.addEventListener('click', () => _onBubbleClick(word));
+
     item.appendChild(bubble);
     c.appendChild(item);
   }

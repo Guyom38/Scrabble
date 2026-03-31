@@ -26,6 +26,8 @@ export class Scorer {
       let wordScore   = 0;
       let wordMultiplier = 1;
       let wordString  = '';
+      const coords    = [];
+      const bonuses   = [];
 
       for (const { x, y, tile } of cells) {
         const key     = `${x},${y}`;
@@ -33,11 +35,13 @@ export class Scorer {
         const bonus   = BOARD_LAYOUT[y][x];
         let tileVal   = tile.value;
 
+        coords.push({ x, y });
+
         if (isNew) {
-          if (bonus === 3) tileVal *= 3;  // Lettre Triple
-          if (bonus === 4) tileVal *= 2;  // Lettre Double
-          if (bonus === 1) wordMultiplier *= 3;  // Mot Triple
-          if (bonus === 2 || bonus === 5) wordMultiplier *= 2;  // Mot Double / étoile
+          if (bonus === 3) { tileVal *= 3; bonuses.push({ x, y, type: 'tl' }); }
+          if (bonus === 4) { tileVal *= 2; bonuses.push({ x, y, type: 'dl' }); }
+          if (bonus === 1) { wordMultiplier *= 3; bonuses.push({ x, y, type: 'tw' }); }
+          if (bonus === 2 || bonus === 5) { wordMultiplier *= 2; bonuses.push({ x, y, type: 'dw' }); }
         }
         wordScore  += tileVal;
         wordString += tile.letter;
@@ -45,7 +49,7 @@ export class Scorer {
 
       wordScore *= wordMultiplier;
       total     += wordScore;
-      wordScores.push({ word: wordString, score: wordScore });
+      wordScores.push({ word: wordString, score: wordScore, coords, bonuses, wordMultiplier });
     }
 
     if (scrabble) total += SCRABBLE_BONUS;
