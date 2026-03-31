@@ -120,34 +120,52 @@
 .tile--temp {
   outline: 2.5px solid #27ae60;
   outline-offset: 2px;
+  transform: translate(3px, -3px);
   box-shadow:
-    0 3px 0 #8B5E20,
-    0 5px 12px rgba(0,0,0,0.5),
-    inset 0 1px 0 rgba(255,255,255,0.85),
-    0 0 10px rgba(39,174,96,0.35);
+    -1px  1px 0 #7a4820,
+    -2px  2px 0 #6b3c18,
+    -3px  3px 0 #5a3010,
+    -4px  4px 0 #4a2408,
+    -5px  8px 12px rgba(0,0,0,0.5),
+    0 0 12px rgba(39,174,96,0.4),
+    inset 0  1px 0 rgba(255,255,255,0.9),
+    inset 1px 0  0 rgba(255,255,255,0.55);
   animation: tileDrop 350ms cubic-bezier(0.34,1.56,0.64,1) both;
 }
 
-/* Tuile validée — posée sur le plateau, relief conservé */
+/* Tuile validée — décalée haut-droite comme les autres, non interactive */
 .tile--placed {
   cursor: default;
-  transform: translateY(0);
+  transform: translate(3px, -3px);
   box-shadow:
-    4px -4px 0 rgba(60,30,5,0.65),
-    5px -5px 6px rgba(0,0,0,0.35),
-    inset 0 1px 0 rgba(255,255,255,0.5);
-  filter: brightness(0.88) saturate(0.85);
-  border-color: #7a4a10;
+    -1px  1px 0 #7a4820,
+    -2px  2px 0 #6b3c18,
+    -3px  3px 0 #5a3010,
+    -4px  4px 0 #4a2408,
+    -5px  8px 12px rgba(0,0,0,0.5),
+    inset 0  1px 0 rgba(255,255,255,0.9),
+    inset 1px 0  0 rgba(255,255,255,0.55),
+    inset -1px 0 0 rgba(0,0,0,0.10),
+    inset 0 -1px 0 rgba(0,0,0,0.16);
+  filter: none;
+  border-color: #a07030;
+  border-bottom-color: #7a4a10;
   animation: tileLock 700ms cubic-bezier(0.34, 1.2, 0.64, 1) both;
 }
 
 .tile--placed:hover {
-  transform: none;
-  filter: brightness(0.88) saturate(0.85);
+  transform: translate(3px, -3px);
+  filter: none;
   box-shadow:
-    4px -4px 0 rgba(60,30,5,0.65),
-    5px -5px 6px rgba(0,0,0,0.35),
-    inset 0 1px 0 rgba(255,255,255,0.5);
+    -1px  1px 0 #7a4820,
+    -2px  2px 0 #6b3c18,
+    -3px  3px 0 #5a3010,
+    -4px  4px 0 #4a2408,
+    -5px  8px 12px rgba(0,0,0,0.5),
+    inset 0  1px 0 rgba(255,255,255,0.9),
+    inset 1px 0  0 rgba(255,255,255,0.55),
+    inset -1px 0 0 rgba(0,0,0,0.10),
+    inset 0 -1px 0 rgba(0,0,0,0.16);
   cursor: default;
 }
 
@@ -192,20 +210,25 @@
   text-shadow: 0 1px 0 rgba(255,255,255,0.5);
 }
 
-/* ---------- Tuiles sur le plateau : taille maximale + relief haut-droite ---------- */
+/* ---------- Tuiles sur le plateau : décalées haut-droite + extrusion ---------- */
 .board .tile {
   width:  calc(var(--cell-size) - 2px);
   height: calc(var(--cell-size) - 2px);
   font-size:    calc(var(--cell-size) * 0.46);
-  border-radius: 3px;
-  /* Relief 4px vers le haut et la droite : ombre portée en bas-gauche */
+  border-radius: 4px;
+  border: 1.5px solid #6b3a12;
+  border-bottom-color: #5a2e0a;
+  transform: translate(3px, -3px);
   box-shadow:
-    4px -4px 0 rgba(80,45,5,0.75),
-    5px -5px 8px rgba(0,0,0,0.4),
-    inset 0 1px 0 rgba(255,255,255,0.9),
-    inset 1px 0 0 rgba(255,255,255,0.5),
-    inset -1px 0 0 rgba(0,0,0,0.12),
-    inset 0 -1px 0 rgba(0,0,0,0.18);
+    -1px  1px 0 #7a4820,
+    -2px  2px 0 #6b3c18,
+    -3px  3px 0 #5a3010,
+    -4px  4px 0 #4a2408,
+    -5px  8px 12px rgba(0,0,0,0.5),
+    inset 0  1px 0 rgba(255,255,255,0.9),
+    inset 1px 0  0 rgba(255,255,255,0.55),
+    inset -1px 0 0 rgba(0,0,0,0.10),
+    inset 0 -1px 0 rgba(0,0,0,0.16);
 }
 .board .tile .tile__value {
   font-size: calc(var(--cell-size) * 0.17);
@@ -229,12 +252,22 @@ body.tile-held * {
   cursor: grabbing !important;
 }
 
-/* Tuiles dans le workspace — calées sur la taille des cellules du rack */
+/* Tuiles dans le workspace — calées sur la taille des cellules du rack + volume haut-droite */
 .workspace .tile {
   width:  var(--rack-tile-sz, 38px);
   height: var(--rack-tile-sz, 38px);
   font-size:    calc(var(--rack-tile-sz, 38px) * 0.44);
   border-radius: 4px;
+  box-shadow:
+    -1px  1px 0 #7a4820,
+    -2px  2px 0 #633c18,
+    -3px  3px 0 #4e2e10,
+    -4px  4px 0 #3a2008,
+    -5px  8px 12px rgba(0,0,0,0.5),
+    inset 0  1px 0 rgba(255,255,255,0.9),
+    inset 1px 0  0 rgba(255,255,255,0.55),
+    inset -1px 0 0 rgba(0,0,0,0.10),
+    inset 0 -1px 0 rgba(0,0,0,0.16);
 }
 .workspace .tile .tile__value {
   font-size: calc(var(--rack-tile-sz, 38px) * 0.16);

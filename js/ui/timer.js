@@ -2,6 +2,8 @@
  * timer.js — Chronomètre de partie
  */
 
+const TIMER_KEY = 'scrabble_timer_elapsed';
+
 export class GameTimer {
   /**
    * @param {HTMLElement} el — élément affichant HH:MM:SS
@@ -29,25 +31,34 @@ export class GameTimer {
     this._interval = null;
   }
 
-  /** Remet à zéro. */
+  /** Remet à zéro et efface la persistance. */
   reset() {
     this.pause();
     this._elapsed = 0;
+    try { localStorage.removeItem(TIMER_KEY); } catch {}
     this._render();
   }
 
   /** @returns {number} secondes écoulées */
   get elapsed() { return this._elapsed; }
 
-  /** Restaure depuis une sauvegarde. */
+  /** Restaure depuis localStorage (F5) ou une valeur explicite. */
   restore(seconds) {
-    this._elapsed = seconds || 0;
+    if (seconds != null && seconds > 0) {
+      this._elapsed = seconds;
+    } else {
+      try {
+        const saved = parseInt(localStorage.getItem(TIMER_KEY) || '0');
+        this._elapsed = saved || 0;
+      } catch { this._elapsed = 0; }
+    }
     this._render();
   }
 
   /** @private */
   _tick() {
     this._elapsed++;
+    try { localStorage.setItem(TIMER_KEY, this._elapsed); } catch {}
     this._render();
   }
 

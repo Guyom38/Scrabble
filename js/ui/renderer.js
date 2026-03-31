@@ -506,9 +506,11 @@ export class Renderer {
     );
 
     // Trouver l'emplacement le plus proche du point de dépôt (occupé ou non)
+    // Comparer le curseur au CENTRE du slot (pas son coin supérieur-gauche)
+    const half = tileSize / 2;
     let bestSlot = 0, bestDist = Infinity;
     for (let i = 0; i < slots.length; i++) {
-      const dx = slots[i].x - dropX, dy = slots[i].y - dropY;
+      const dx = (slots[i].x + half) - dropX, dy = (slots[i].y + half) - dropY;
       const dist = dx * dx + dy * dy;
       if (dist < bestDist) { bestDist = dist; bestSlot = i; }
     }
@@ -615,13 +617,18 @@ export class Renderer {
     const list = this._els.scoreList;
     if (!list) return;
 
-    players.forEach(p => {
+    // Tri par score décroissant pour le rang
+    const sorted = [...players].sort((a, b) => b.score - a.score);
+    const _ordinal = i => i === 0 ? '1er' : `${i + 1}ème`;
+
+    sorted.forEach((p, rankIdx) => {
       let entry = list.querySelector(`.score-entry[data-player-id="${p.id}"]`);
       if (!entry) {
         entry = document.createElement('li');
         entry.className = 'score-entry';
         entry.dataset.playerId = p.id;
         entry.innerHTML = `
+          <div class="score-entry__rank"></div>
           <div class="score-entry__color" style="background:${PLAYER_COLORS[p.colorIndex]};box-shadow:0 0 8px ${PLAYER_COLORS[p.colorIndex]}"></div>
           <div class="score-entry__info">
             <div class="score-entry__name">${p.name}</div>
@@ -629,16 +636,22 @@ export class Renderer {
           </div>
           <div class="score-entry__score" data-score>0</div>
           <div class="score-entry__thinking"></div>`;
-        list.appendChild(entry);
       }
 
+      // Mise à jour du rang
+      const rankEl = entry.querySelector('.score-entry__rank');
+      if (rankEl) {
+        rankEl.textContent = _ordinal(rankIdx);
+        rankEl.dataset.rank = rankIdx;
+      }
+
+      // Mise à jour du score
       const scoreEl = entry.querySelector('[data-score]');
       const oldScore = parseInt(scoreEl?.textContent || '0');
       if (scoreEl && p.score !== oldScore) {
         const delta = p.score - oldScore;
         scoreEl.textContent = p.score;
         if (delta > 0) {
-          // Flash doré sur le score
           scoreEl.classList.remove('score-flash');
           void scoreEl.offsetWidth;
           scoreEl.classList.add('score-flash');
@@ -651,6 +664,9 @@ export class Renderer {
           deltaEl.addEventListener('animationend', () => deltaEl.remove(), { once: true });
         }
       }
+
+      // Réordonne le DOM selon le tri
+      list.appendChild(entry);
     });
   }
 

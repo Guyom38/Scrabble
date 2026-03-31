@@ -231,8 +231,9 @@ function _startGame(config) {
 
   renderer.init();
 
-  // Chronomètre
+  // Chronomètre (reset efface aussi le localStorage)
   timer = new GameTimer(document.getElementById('timer-display'));
+  timer.reset();
   timer.start();
 
   // Écouter la fin de partie pour arrêter le timer
@@ -255,9 +256,8 @@ function _resumeGame() {
 
   renderer.init();
 
-  const save = SaveManager.load();
   timer = new GameTimer(document.getElementById('timer-display'));
-  timer.restore(save?.elapsed ?? 0);
+  timer.restore(); // lit depuis localStorage
 
   document.addEventListener('game:gameOver', () => timer.pause(), { once: true });
 

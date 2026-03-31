@@ -63,6 +63,32 @@
   border-radius: 0 2px 2px 0;
 }
 
+/* ---------- Rang ---------- */
+.score-entry__rank {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+  min-width: 28px;
+  text-align: right;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.score-entry__rank[data-rank="0"] {
+  font-size: 1rem;
+  color: var(--accent-gold-light);
+  text-shadow: 0 0 10px rgba(212,160,23,0.4);
+}
+.score-entry__rank[data-rank="1"] {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+.score-entry__rank[data-rank="2"] {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
 /* ---------- Couleur joueur ---------- */
 .score-entry__color {
   width: 10px;
