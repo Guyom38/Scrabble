@@ -45,7 +45,7 @@
 */
 #screen-game {
   --sidebar-w:   350px;
-  --workspace-w: clamp(300px, 28vw, 440px);
+  --workspace-w: clamp(380px, 34vw, 520px);
   --cell-size: clamp(
     22px,
     min(
@@ -850,7 +850,7 @@
 .tile-rack__slots {
   display: grid;
   grid-template-columns: repeat(4, var(--rack-tile-sz, 40px));
-  gap: 6px;
+  gap: 8px;
   position: relative;
   z-index: 1;
 }

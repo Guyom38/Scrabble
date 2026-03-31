@@ -878,7 +878,7 @@ export class Renderer {
   /* ================================================================== */
 
   _computeRackSlotPositions(tileSize, wsW, wsH) {
-    const COLS = 4, ROWS = 2, GAP = 6, PAD_X = 12, PAD_Y = 10, BDR = 3;
+    const COLS = 4, ROWS = 2, GAP = 8, PAD_X = 14, PAD_Y = 14, BDR = 3;
     const innerW = COLS * tileSize + (COLS - 1) * GAP;
     const innerH = ROWS * tileSize + (ROWS - 1) * GAP;
     const rackW  = 2 * (BDR + PAD_X) + innerW;
@@ -917,10 +917,11 @@ export class Renderer {
       ws.appendChild(rack);
     }
 
-    rack.style.left   = rackLeft + 'px';
-    rack.style.top    = rackTop  + 'px';
-    rack.style.width  = rackW    + 'px';
-    rack.style.height = rackH    + 'px';
+    rack.style.left    = rackLeft + 'px';
+    rack.style.top     = rackTop  + 'px';
+    rack.style.width   = rackW    + 'px';
+    rack.style.height  = rackH    + 'px';
+    rack.style.padding = '14px';
     rack.style.setProperty('--rack-tile-sz', tileSize + 'px');
   }
 }
