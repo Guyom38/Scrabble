@@ -243,6 +243,18 @@ export class Renderer {
     const ws = this._els.workspace;
     if (!ws) { this._renderRack(rack); return; }
 
+    const wsRect = ws.getBoundingClientRect();
+    const wsW = wsRect.width  || 340;
+    const wsH = wsRect.height || window.innerHeight;
+
+    const cellSize = parseInt(getComputedStyle(document.documentElement)
+      .getPropertyValue('--cell-size')) || 42;
+    const tileSize = cellSize - 2;
+
+    // Créer / mettre à jour le cadre de pioche
+    this._ensureTileRack(ws, tileSize, wsW, wsH);
+    const { slots } = this._computeRackSlotPositions(tileSize, wsW, wsH);
+
     const existingIds = new Set(rack.filter(Boolean).map(t => t.id));
 
     // Supprimer les tuiles absentes du rack
@@ -251,31 +263,29 @@ export class Renderer {
         el.remove();
         this._workspaceEls.delete(id);
         this._workspacePositions.delete(id);
+        this._tileSlotIdx.delete(id);
       }
     }
 
-    // Ajouter les nouvelles tuiles
+    // Ajouter les nouvelles tuiles dans les emplacements libres
     const newTiles = rack.filter(t => t && !this._workspaceEls.has(t.id));
     if (newTiles.length === 0) return;
 
-    const wsRect = ws.getBoundingClientRect();
-    const wsW = wsRect.width  || 340;
-    const wsH = wsRect.height || window.innerHeight;
-
-    const cellSize = parseInt(getComputedStyle(document.documentElement)
-      .getPropertyValue('--cell-size')) || 42;
-    const tileSize = cellSize - 2;
-    const margin   = 10;
-    const xStep    = 8; // décalage horizontal entre tuiles superposées
-
-    // Positions déjà occupées (y compris celles draggées hors workspace)
-    const occupied = [...this._workspacePositions.values()];
-
+    const occupiedSlots = new Set(this._tileSlotIdx.values());
     const newEls = [];
+
     for (const tile of newTiles) {
       if (!tile) continue;
-      const pos = this._findFreeWorkspacePos(tileSize, margin, xStep, wsW, wsH, occupied);
-      occupied.push(pos);
+
+      // Premier emplacement libre
+      let slotIdx = 0;
+      for (let i = 0; i < slots.length; i++) {
+        if (!occupiedSlots.has(i)) { slotIdx = i; break; }
+      }
+      occupiedSlots.add(slotIdx);
+      this._tileSlotIdx.set(tile.id, slotIdx);
+
+      const pos = slots[slotIdx];
       this._workspacePositions.set(tile.id, pos);
 
       const el = this._createTileEl(tile);
@@ -283,7 +293,7 @@ export class Renderer {
       el.style.position = 'absolute';
       el.style.left     = pos.x + 'px';
       el.style.top      = pos.y + 'px';
-      el.style.zIndex   = String(Math.round((pos.x - margin) / xStep) + 10);
+      el.style.zIndex   = String(slotIdx + 10);
       el.style.cursor   = 'grab';
 
       ws.appendChild(el);
@@ -439,15 +449,49 @@ export class Renderer {
     if (!ws) return;
 
     const wsRect = ws.getBoundingClientRect();
-    const sz = el.offsetWidth || 40;
+    const wsW = wsRect.width  || 340;
+    const wsH = wsRect.height || window.innerHeight;
+    const cellSize = parseInt(getComputedStyle(document.documentElement)
+      .getPropertyValue('--cell-size')) || 42;
+    const tileSize = cellSize - 2;
 
-    const x = Math.max(0, Math.min(wsRect.width  - sz, clientX - wsRect.left - sz / 2));
-    const y = Math.max(0, Math.min(wsRect.height - sz, clientY - wsRect.top  - sz / 2));
+    this._ensureTileRack(ws, tileSize, wsW, wsH);
+    const { slots } = this._computeRackSlotPositions(tileSize, wsW, wsH);
+
+    const dropX = clientX - wsRect.left;
+    const dropY = clientY - wsRect.top;
+
+    // Emplacements déjà pris par les autres tuiles
+    const occupiedSlots = new Set(
+      [...this._tileSlotIdx.entries()]
+        .filter(([id]) => id !== tileId)
+        .map(([, s]) => s)
+    );
+
+    // Garder l'emplacement d'origine si libre, sinon prendre le plus proche libre
+    const origSlot = this._tileSlotIdx.get(tileId);
+    let bestSlot = -1;
+    if (origSlot !== undefined && !occupiedSlots.has(origSlot)) {
+      bestSlot = origSlot;
+    } else {
+      let bestDist = Infinity;
+      for (let i = 0; i < slots.length; i++) {
+        if (occupiedSlots.has(i)) continue;
+        const dx = slots[i].x - dropX, dy = slots[i].y - dropY;
+        const dist = dx * dx + dy * dy;
+        if (dist < bestDist) { bestDist = dist; bestSlot = i; }
+      }
+    }
+    if (bestSlot === -1) bestSlot = 0;
+
+    const pos = slots[bestSlot];
+    this._tileSlotIdx.set(tileId, bestSlot);
+    this._workspacePositions.set(tileId, pos);
 
     el.style.position      = 'absolute';
-    el.style.left          = x + 'px';
-    el.style.top           = y + 'px';
-    el.style.zIndex        = '';
+    el.style.left          = pos.x + 'px';
+    el.style.top           = pos.y + 'px';
+    el.style.zIndex        = String(bestSlot + 10);
     el.style.pointerEvents = '';
     el.style.transform     = '';
     el.style.boxShadow     = '';
@@ -455,13 +499,25 @@ export class Renderer {
     el.style.cursor        = 'grab';
 
     ws.appendChild(el);
-    this._workspacePositions.set(tileId, { x, y });
   }
 
   _cancelDrag() {
     if (!this._drag) return;
     const { el, tileId } = this._drag;
-    const pos = this._workspacePositions.get(tileId) ?? { x: 0, y: 0 };
+
+    // Recalculer la position du slot si disponible
+    let pos = this._workspacePositions.get(tileId) ?? { x: 0, y: 0 };
+    const ws = this._els.workspace;
+    if (ws && this._tileSlotIdx.has(tileId)) {
+      const wsRect = ws.getBoundingClientRect();
+      const cellSize = parseInt(getComputedStyle(document.documentElement)
+        .getPropertyValue('--cell-size')) || 42;
+      const { slots } = this._computeRackSlotPositions(
+        cellSize - 2, wsRect.width || 340, wsRect.height || window.innerHeight
+      );
+      const slotIdx = this._tileSlotIdx.get(tileId);
+      if (slots[slotIdx]) pos = slots[slotIdx];
+    }
 
     el.style.position      = 'absolute';
     el.style.left          = pos.x + 'px';
@@ -473,7 +529,7 @@ export class Renderer {
     el.style.transition    = '';
     el.style.cursor        = 'grab';
 
-    this._els.workspace?.appendChild(el);
+    ws?.appendChild(el);
     this._lastHighlightCell?.classList.remove('drag-over');
     this._lastHighlightCell = null;
     this._drag = null;
@@ -818,29 +874,53 @@ export class Renderer {
   }
 
   /* ================================================================== */
-  /* PLACEMENT LIBRE DANS LE WORKSPACE                                   */
+  /* CADRE DE PIOCHE (rack workspace)                                    */
   /* ================================================================== */
 
-  _findFreeWorkspacePos(tileSize, margin, xStep, wsW, wsH, occupied) {
-    const topPad     = 44; // espace pour le label "VOS TUILES"
-    const yStep      = tileSize + 10; // espacement vertical entre rangées
-    const colsPerRow = Math.max(1, Math.floor((wsW - margin * 2 - tileSize) / xStep) + 1);
+  _computeRackSlotPositions(tileSize, wsW, wsH) {
+    const COLS = 4, ROWS = 2, GAP = 6, PAD_X = 12, PAD_Y = 10, BDR = 3;
+    const innerW = COLS * tileSize + (COLS - 1) * GAP;
+    const innerH = ROWS * tileSize + (ROWS - 1) * GAP;
+    const rackW  = 2 * (BDR + PAD_X) + innerW;
+    const rackH  = 2 * (BDR + PAD_Y) + innerH;
+    const rackLeft = Math.round((wsW - rackW) / 2);
+    const rackTop  = Math.max(64, Math.round(wsH * 0.6 - rackH / 2));
 
-    // Parcourir les slots ligne par ligne, gauche → droite (overlap 8px)
-    for (let row = 0; row < 30; row++) {
-      for (let col = 0; col < colsPerRow; col++) {
-        const x = margin + col * xStep;
-        const y = topPad + row * yStep;
-
-        if (y + tileSize > wsH - margin) continue;
-
-        const taken = occupied.some(p =>
-          Math.abs(p.x - x) < xStep * 0.9 &&
-          Math.abs(p.y - y) < yStep * 0.9
-        );
-        if (!taken) return { x, y };
+    const slots = [];
+    for (let row = 0; row < ROWS; row++) {
+      for (let col = 0; col < COLS; col++) {
+        slots.push({
+          x: rackLeft + BDR + PAD_X + col * (tileSize + GAP),
+          y: rackTop  + BDR + PAD_Y + row * (tileSize + GAP),
+        });
       }
     }
-    return { x: margin, y: topPad };
+    return { rackLeft, rackTop, rackW, rackH, slots };
+  }
+
+  _ensureTileRack(ws, tileSize, wsW, wsH) {
+    const { rackLeft, rackTop, rackW, rackH } =
+      this._computeRackSlotPositions(tileSize, wsW, wsH);
+
+    let rack = ws.querySelector('.tile-rack');
+    if (!rack) {
+      rack = document.createElement('div');
+      rack.className = 'tile-rack';
+      const inner = document.createElement('div');
+      inner.className = 'tile-rack__slots';
+      for (let i = 0; i < 8; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'tile-rack__slot';
+        inner.appendChild(slot);
+      }
+      rack.appendChild(inner);
+      ws.appendChild(rack);
+    }
+
+    rack.style.left   = rackLeft + 'px';
+    rack.style.top    = rackTop  + 'px';
+    rack.style.width  = rackW    + 'px';
+    rack.style.height = rackH    + 'px';
+    rack.style.setProperty('--rack-tile-sz', tileSize + 'px');
   }
 }
