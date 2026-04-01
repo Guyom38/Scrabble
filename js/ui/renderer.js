@@ -244,8 +244,10 @@ export class Renderer {
           if (!cell) return;
           const LABELS = { tw: 'MOT ×3', dw: 'MOT ×2', tl: 'LET ×3', dl: 'LET ×2' };
           const COLORS = { tw: '#e74c3c', dw: '#e08090', tl: '#3498db', dl: '#5aaad8' };
+          const isWord = b.type === 'dw' || b.type === 'tw';
           const pop = document.createElement('div');
-          pop.className = 'bonus-pop';
+          pop.className = 'bonus-pop' + (isWord ? ' bonus-pop--word' : '');
+          if (b.type === 'tw') pop.classList.add('bonus-pop--tw');
           pop.textContent = LABELS[b.type] || '';
           pop.style.color = COLORS[b.type] || '#f0c040';
           pop.style.animationDelay = `${i * 120}ms`;
@@ -1096,7 +1098,24 @@ export class Renderer {
     const innerH = ROWS * tileSize + (ROWS - 1) * GAP;
     const rackW  = 2 * (BDR + PAD_X) + innerW;
     const rackH  = 2 * (BDR + PAD_Y) + innerH;
-    const rackLeft = Math.round((wsW - rackW) / 2);
+    // Centrer le rack entre le début du workspace et le bord du plateau (déborde à droite)
+    const boardFrame = document.querySelector('.board-frame');
+    let availW = wsW;
+    if (boardFrame) {
+      const wsEl = document.getElementById('workspace');
+      if (wsEl) {
+        const wsRect = wsEl.getBoundingClientRect();
+        const bfRect = boardFrame.getBoundingClientRect();
+        const { sx } = (() => {
+          const canvas = document.getElementById('app-canvas');
+          if (!canvas) return { sx: 1 };
+          const r = canvas.getBoundingClientRect();
+          return { sx: r.width / 1920 };
+        })();
+        availW = (bfRect.left - wsRect.left) / sx;
+      }
+    }
+    const rackLeft = Math.round((availW - rackW) / 2) + 5;
     const rackTop  = Math.max(64, Math.round(wsH * 0.6 - rackH / 2));
 
     const slots = [];
