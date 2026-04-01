@@ -162,9 +162,9 @@ export class Board {
       for (const p of placements) {
         const cross = this.getWordCells(p.x, p.y, crossDir);
         if (cross.length >= 2) {
-          // Éviter les doublons
+          // Éviter les doublons (y compris avec le mot principal)
           const key = cross.map(c => `${c.x},${c.y}`).join('|');
-          if (!words.slice(1).some(w => w.cells.map(c => `${c.x},${c.y}`).join('|') === key)) {
+          if (!words.some(w => w.cells.map(c => `${c.x},${c.y}`).join('|') === key)) {
             words.push({ cells: cross, isMain: false });
           }
         }

@@ -290,13 +290,18 @@
   animation: cellWordHighlight 1.2s ease both;
 }
 
+/* Cellule contenant un bonus-pop : monter au-dessus de tout */
+.board__cell:has(.bonus-pop) {
+  z-index: 50 !important;
+}
+
 /* ---------- Bonus pop BD ---------- */
 .bonus-pop {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -120%) scale(0);
-  z-index: 100;
+  z-index: 200;
   font-family: 'Playfair Display', Georgia, serif;
   font-size: 22px;
   font-weight: 900;
