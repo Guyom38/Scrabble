@@ -15,13 +15,14 @@ export function floatScore(anchor, text, color = '#82e0aa') {
   const canvas = document.getElementById('app-canvas');
   const canvasRect = canvas?.getBoundingClientRect();
   const anchorRect = anchor.getBoundingClientRect();
-  const scale = canvasRect ? canvasRect.width / 1920 : 1;
+  const sx = canvasRect ? canvasRect.width  / 1920 : 1;
+  const sy = canvasRect ? canvasRect.height / 1080 : 1;
   const el   = document.createElement('div');
   el.textContent = text;
   el.style.cssText = `
     position: absolute;
-    left:   ${(anchorRect.left - (canvasRect?.left || 0)) / scale + anchorRect.width / scale / 2}px;
-    top:    ${(anchorRect.top  - (canvasRect?.top  || 0)) / scale}px;
+    left:   ${(anchorRect.left - (canvasRect?.left || 0)) / sx + anchorRect.width / sx / 2}px;
+    top:    ${(anchorRect.top  - (canvasRect?.top  || 0)) / sy}px;
     transform: translateX(-50%);
     color:  ${color};
     font-family: 'Playfair Display', Georgia, serif;

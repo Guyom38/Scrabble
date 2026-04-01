@@ -438,22 +438,40 @@ export class Renderer {
     }, { passive: false });
   }
 
-  /** Convertit les coordonnées écran en coordonnées canvas (tenant compte du scale) */
+  /** Retourne les facteurs de scale courants du canvas */
+  _getCanvasScale() {
+    const canvas = document.getElementById('app-canvas');
+    if (!canvas) return { sx: 1, sy: 1 };
+    const rect = canvas.getBoundingClientRect();
+    return { sx: rect.width / 1920, sy: rect.height / 1080 };
+  }
+
+  /** Convertit les coordonnées écran en coordonnées canvas (tenant compte du scale X/Y) */
   _toCanvasCoords(clientX, clientY) {
     const canvas = document.getElementById('app-canvas');
     if (!canvas) return { x: clientX, y: clientY };
     const rect = canvas.getBoundingClientRect();
-    const scale = rect.width / 1920;
     return {
-      x: (clientX - rect.left) / scale,
-      y: (clientY - rect.top)  / scale,
+      x: (clientX - rect.left) / (rect.width  / 1920),
+      y: (clientY - rect.top)  / (rect.height / 1080),
+    };
+  }
+
+  /** Convertit les coordonnées écran en coordonnées locales d'un élément (dans l'espace canvas) */
+  _toLocalCoords(clientX, clientY, element) {
+    const { sx, sy } = this._getCanvasScale();
+    const rect = element.getBoundingClientRect();
+    return {
+      x: (clientX - rect.left) / sx,
+      y: (clientY - rect.top)  / sy,
     };
   }
 
   _startDrag(el, tile, clientX, clientY) {
     if (this._drag) this._cancelDrag(); // annuler un éventuel drag en cours
 
-    const sz = el.offsetWidth || 40;
+    // Taille cible = cellule du plateau (taille finale sur le board)
+    const cellSize = this._getCellSize();
     const pos = this._toCanvasCoords(clientX, clientY);
 
     this._drag = {
@@ -463,14 +481,17 @@ export class Renderer {
       value:   tile.value,
       isBlank: tile.isBlank,
       clientX, clientY,
+      dragSize: cellSize,
     };
 
     el.style.position      = 'absolute';
-    el.style.left          = (pos.x - sz / 2) + 'px';
-    el.style.top           = (pos.y - sz / 2) + 'px';
+    el.style.width          = cellSize + 'px';
+    el.style.height         = cellSize + 'px';
+    el.style.left          = (pos.x - cellSize / 2) + 'px';
+    el.style.top           = (pos.y - cellSize / 2) + 'px';
     el.style.zIndex        = '9999';
     el.style.pointerEvents = 'none';
-    el.style.transform     = 'scale(1.18) rotate(2deg)';
+    el.style.transform     = '';
     el.style.boxShadow     = '0 14px 36px rgba(0,0,0,0.85), 0 0 0 2px rgba(212,160,23,0.85)';
     el.style.transition    = 'none';
     el.style.cursor        = 'grabbing';
@@ -482,8 +503,8 @@ export class Renderer {
   }
 
   _moveDrag(clientX, clientY) {
-    const { el } = this._drag;
-    const sz = el.offsetWidth || 40;
+    const { el, dragSize } = this._drag;
+    const sz = dragSize || el.offsetWidth || 40;
     const pos = this._toCanvasCoords(clientX, clientY);
     el.style.left = (pos.x - sz / 2) + 'px';
     el.style.top  = (pos.y - sz / 2) + 'px';
@@ -599,10 +620,10 @@ export class Renderer {
     this._ensureTileRack(ws, tileSize, wsW, wsH);
     const { slots } = this._computeRackSlotPositions(tileSize, wsW, wsH);
 
-    // Convertir les coords écran en coords canvas, puis en relatif workspace
-    const canvasPos = this._toCanvasCoords(clientX, clientY);
-    const dropX = canvasPos.x - ws.offsetLeft;
-    const dropY = canvasPos.y - ws.offsetTop;
+    // Convertir les coords écran en coords locales du workspace
+    const local = this._toLocalCoords(clientX, clientY, ws);
+    const dropX = local.x;
+    const dropY = local.y;
 
     // Emplacements déjà pris par les autres tuiles
     const occupiedSlots = new Set(
@@ -631,6 +652,8 @@ export class Renderer {
     this._workspacePositions.set(tileId, pos);
 
     el.style.position      = 'absolute';
+    el.style.width          = '';
+    el.style.height         = '';
     el.style.left          = pos.x + 'px';
     el.style.top           = pos.y + 'px';
     el.style.zIndex        = String(bestSlot + 10);
@@ -660,6 +683,8 @@ export class Renderer {
     }
 
     el.style.position      = 'absolute';
+    el.style.width          = '';
+    el.style.height         = '';
     el.style.left          = pos.x + 'px';
     el.style.top           = pos.y + 'px';
     el.style.zIndex        = '';
@@ -1051,6 +1076,12 @@ export class Renderer {
   /* ================================================================== */
   /* CADRE DE PIOCHE (rack workspace)                                    */
   /* ================================================================== */
+
+  /** Retourne la taille d'une cellule du plateau (px dans l'espace canvas) */
+  _getCellSize() {
+    const cell = this._els.board?.querySelector('.board__cell');
+    return cell ? cell.offsetWidth : 65;
+  }
 
   /** Calcule la taille des tuiles pour que les 8 colonnes tiennent dans wsW. */
   _computeTileSize(wsW) {
