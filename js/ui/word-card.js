@@ -23,8 +23,15 @@ function _getContainer() {
 /**
  * Affiche la définition — empile si d'autres sont visibles.
  */
+let _lastCardWord = '';
+
 export function showWordCard(word, info) {
   if (!info || (!info.description && !info.definition)) return;
+
+  // Anti-doublon : ignorer si même mot affiché dans les 2s
+  if (word === _lastCardWord) return;
+  _lastCardWord = word;
+  setTimeout(() => { if (_lastCardWord === word) _lastCardWord = ''; }, 2000);
 
   const container = _getContainer();
   if (!container) return;

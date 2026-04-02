@@ -262,15 +262,17 @@ export class Renderer {
     if (firstCell) floatScore(firstCell, `+${total}`, scrabble ? '#f0c040' : '#82e0aa');
     if (scrabble) launchConfetti();
 
-    // 4) Historique des mots joués
-    if (mainWord) {
+    // 4) Historique de TOUS les mots formés (principal + croisés)
+    if (wordScores && wordScores.length > 0) {
       const playerIdx = (this._players || []).findIndex(p => p.id === playerId);
       const color     = PLAYER_COLORS[playerIdx] ?? '#f0c040';
       const name      = (this._players || [])[playerIdx]?.name ?? '';
-      addWordHistory({ word: mainWord, score: total, playerName: name, color });
+      for (const ws of wordScores) {
+        addWordHistory({ word: ws.word, score: ws.score, playerName: name, color });
+      }
     }
 
-    // 5) Définition du mot (seulement si auto-définition activée)
+    // 5) Définition du mot principal (seulement si auto-définition activée)
     if (mainWord && this._autoDef) {
       wordInfoService.getAsync(mainWord).then(info => {
         if (info && (info.description || info.definition)) {
@@ -558,11 +560,17 @@ export class Renderer {
           !this._tempPlacements.has(`${x},${y}`)) {
 
         if (isBlank) {
-          const human = this._engine.players.find(p => p.isHuman);
-          const tileObj = human?.rack.find(t => t?.id === tileId) || { id: tileId };
-          this._openJokerModal(tileObj, (chosenLetter) => {
+          // Sauvegarder le drag avant de le nullifier (le modal est asynchrone)
+          const savedDrag = this._drag;
+          this._drag = null;
+          document.body.classList.remove('tile-held');
+          this._openJokerModal({ id: tileId }, (chosenLetter) => {
+            // Restaurer temporairement pour _placeTileFromDrag
+            this._drag = savedDrag;
             this._placeTileFromDrag(x, y, { tileId, letter: chosenLetter, value: 0, isBlank: true });
+            this._drag = null;
           });
+          return;
         } else {
           this._placeTileFromDrag(x, y, { tileId, letter, value, isBlank });
         }
