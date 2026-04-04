@@ -335,6 +335,7 @@ function wireButtons() {
   document.getElementById('btn-quit-game')?.addEventListener('click', () => {
     ModalManager.closeAll();
     timer?.pause();
+    renderer?.destroy();
     engine   = null;
     renderer = null;
     showScreen('screen-menu');
@@ -344,6 +345,7 @@ function wireButtons() {
   document.getElementById('btn-new-game-from-modal')?.addEventListener('click', () => {
     ModalManager.closeAll();
     timer?.pause();
+    renderer?.destroy();
     engine   = null;
     renderer = null;
     showScreen('screen-config');
@@ -359,6 +361,7 @@ function wireButtons() {
 
   document.getElementById('btn-back-menu-end')?.addEventListener('click', () => {
     ModalManager.closeAll();
+    renderer?.destroy();
     engine   = null;
     renderer = null;
     showScreen('screen-menu');
